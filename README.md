@@ -2,7 +2,7 @@
 
 > Plataforma web que analisa o potencial de abertura de negócios em regiões de São Paulo usando Machine Learning, mapas interativos e gamificação.
 
-Desenvolvido para a **Feira Científica Smart Cities 2024** — FECAP.
+Desenvolvido para a **Feira Científica Smart Cities 2026** — FECAP.
 
 ---
 
