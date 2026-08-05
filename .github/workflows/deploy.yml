@@ -32,9 +32,11 @@ jobs:
 
       - name: Build (static export)
         working-directory: frontend
-        # Substitua "Radar-de-Oportunidades-main" pelo nome exato do seu repositório no GitHub
+        # NEXT_PUBLIC_API_URL: troque pela URL do seu backend no Render após o deploy
+        # Formato: https://radar-oportunidades-api.onrender.com
         env:
           NEXT_PUBLIC_BASE_PATH: /Radar-de-Oportunidades
+          NEXT_PUBLIC_API_URL: https://seu-backend.onrender.com
         run: npm run build
 
       - name: Add .nojekyll
