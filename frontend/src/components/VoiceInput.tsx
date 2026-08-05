@@ -7,10 +7,27 @@ interface VoiceInputProps {
   onResult: (transcript: string, entities: Record<string, string | null>) => void
 }
 
+// Tipo para SpeechRecognition API (só existe no browser)
+interface ISpeechRecognition extends EventTarget {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  start: () => void
+  stop: () => void
+  onstart: (() => void) | null
+  onend: (() => void) | null
+  onerror: ((event: any) => void) | null
+  onresult: ((event: any) => void) | null
+}
+
+interface ISpeechRecognitionConstructor {
+  new (): ISpeechRecognition
+}
+
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition
-    webkitSpeechRecognition: typeof SpeechRecognition
+    SpeechRecognition?: ISpeechRecognitionConstructor
+    webkitSpeechRecognition?: ISpeechRecognitionConstructor
   }
 }
 
@@ -79,7 +96,7 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
   const [transcript, setTranscript] = useState('')
   const [supported, setSupported] = useState(true)
   const [statusMsg, setStatusMsg] = useState('Toque para falar')
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<ISpeechRecognition | null>(null)
 
   useEffect(() => {
     const SpeechRecognitionAPI =
@@ -98,7 +115,7 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
       setStatusMsg('Ouvindo...')
     }
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       let interim = ''
       let final = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
