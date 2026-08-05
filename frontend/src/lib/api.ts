@@ -8,7 +8,9 @@ import type {
   ScenarioParams,
 } from '@/types'
 
-const BASE_URL = 'http://localhost:8000'
+// Em produção, usa a URL do backend deployado no Render
+// Em desenvolvimento local, usa localhost
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: BASE_URL,

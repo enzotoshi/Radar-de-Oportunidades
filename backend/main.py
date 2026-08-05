@@ -2,6 +2,7 @@
 Radar de Oportunidades Inteligente - Backend FastAPI
 """
 import base64
+import os
 import re
 
 from fastapi import FastAPI, HTTPException
@@ -32,9 +33,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS: aceita o frontend do GitHub Pages + localhost para desenvolvimento
+frontend_url = os.getenv("FRONTEND_URL", "https://enzotoshi.github.io")
+allowed_origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
