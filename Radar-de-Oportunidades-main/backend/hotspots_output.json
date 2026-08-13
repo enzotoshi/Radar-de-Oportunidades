@@ -1,0 +1,337 @@
+{
+  "city": "São Paulo",
+  "business_type": "cafeteria",
+  "total_hotspots": 10,
+  "hotspots": [
+    {
+      "name": "Liberdade",
+      "lat": -23.5593,
+      "lng": -46.6336,
+      "opportunity_score": 87.2,
+      "competition": {
+        "total_competitors": 22,
+        "density_per_km2": 1.75,
+        "average_rating": 4.3,
+        "total_reviews": 58,
+        "currently_open": 19,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 35,
+        "by_type": {},
+        "infrastructure_score": 85
+      },
+      "mobility": {
+        "total_transport_options": 13,
+        "by_type": {},
+        "mobility_score": 60
+      },
+      "attractiveness": {
+        "overall_score": 77.0,
+        "competition_score": 75.1,
+        "infrastructure_score": 80.6,
+        "mobility_score": 47.9,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Tatuapé",
+      "lat": -23.5394,
+      "lng": -46.5744,
+      "opportunity_score": 85.0,
+      "competition": {
+        "total_competitors": 11,
+        "density_per_km2": 0.88,
+        "average_rating": 4.2,
+        "total_reviews": 382,
+        "currently_open": 2,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 36,
+        "by_type": {},
+        "infrastructure_score": 75
+      },
+      "mobility": {
+        "total_transport_options": 11,
+        "by_type": {},
+        "mobility_score": 72
+      },
+      "attractiveness": {
+        "overall_score": 66.6,
+        "competition_score": 65.6,
+        "infrastructure_score": 70.6,
+        "mobility_score": 69.8,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Vila Olímpia",
+      "lat": -23.5963,
+      "lng": -46.6872,
+      "opportunity_score": 83.7,
+      "competition": {
+        "total_competitors": 20,
+        "density_per_km2": 1.59,
+        "average_rating": 3.8,
+        "total_reviews": 72,
+        "currently_open": 2,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 16,
+        "by_type": {},
+        "infrastructure_score": 66
+      },
+      "mobility": {
+        "total_transport_options": 8,
+        "by_type": {},
+        "mobility_score": 76
+      },
+      "attractiveness": {
+        "overall_score": 84.8,
+        "competition_score": 51.3,
+        "infrastructure_score": 61.9,
+        "mobility_score": 61.6,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Mooca",
+      "lat": -23.5528,
+      "lng": -46.5974,
+      "opportunity_score": 83.3,
+      "competition": {
+        "total_competitors": 16,
+        "density_per_km2": 1.27,
+        "average_rating": 3.9,
+        "total_reviews": 52,
+        "currently_open": 9,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 17,
+        "by_type": {},
+        "infrastructure_score": 66
+      },
+      "mobility": {
+        "total_transport_options": 7,
+        "by_type": {},
+        "mobility_score": 77
+      },
+      "attractiveness": {
+        "overall_score": 82.0,
+        "competition_score": 50.5,
+        "infrastructure_score": 81.3,
+        "mobility_score": 79.5,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Perdizes",
+      "lat": -23.5431,
+      "lng": -46.6733,
+      "opportunity_score": 81.8,
+      "competition": {
+        "total_competitors": 9,
+        "density_per_km2": 0.72,
+        "average_rating": 3.9,
+        "total_reviews": 261,
+        "currently_open": 8,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 19,
+        "by_type": {},
+        "infrastructure_score": 72
+      },
+      "mobility": {
+        "total_transport_options": 15,
+        "by_type": {},
+        "mobility_score": 69
+      },
+      "attractiveness": {
+        "overall_score": 74.8,
+        "competition_score": 72.3,
+        "infrastructure_score": 74.7,
+        "mobility_score": 73.1,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Consolação",
+      "lat": -23.5527,
+      "lng": -46.6573,
+      "opportunity_score": 81.0,
+      "competition": {
+        "total_competitors": 21,
+        "density_per_km2": 1.67,
+        "average_rating": 4.4,
+        "total_reviews": 449,
+        "currently_open": 18,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 30,
+        "by_type": {},
+        "infrastructure_score": 63
+      },
+      "mobility": {
+        "total_transport_options": 15,
+        "by_type": {},
+        "mobility_score": 70
+      },
+      "attractiveness": {
+        "overall_score": 63.9,
+        "competition_score": 52.0,
+        "infrastructure_score": 81.1,
+        "mobility_score": 65.7,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Jardins",
+      "lat": -23.5699,
+      "lng": -46.652,
+      "opportunity_score": 79.9,
+      "competition": {
+        "total_competitors": 13,
+        "density_per_km2": 1.03,
+        "average_rating": 4.2,
+        "total_reviews": 163,
+        "currently_open": 11,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 14,
+        "by_type": {},
+        "infrastructure_score": 70
+      },
+      "mobility": {
+        "total_transport_options": 12,
+        "by_type": {},
+        "mobility_score": 40
+      },
+      "attractiveness": {
+        "overall_score": 79.7,
+        "competition_score": 56.2,
+        "infrastructure_score": 75.6,
+        "mobility_score": 73.5,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Santana",
+      "lat": -23.5028,
+      "lng": -46.6282,
+      "opportunity_score": 79.3,
+      "competition": {
+        "total_competitors": 19,
+        "density_per_km2": 1.51,
+        "average_rating": 4.2,
+        "total_reviews": 113,
+        "currently_open": 4,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 27,
+        "by_type": {},
+        "infrastructure_score": 48
+      },
+      "mobility": {
+        "total_transport_options": 14,
+        "by_type": {},
+        "mobility_score": 74
+      },
+      "attractiveness": {
+        "overall_score": 69.9,
+        "competition_score": 69.7,
+        "infrastructure_score": 49.6,
+        "mobility_score": 37.6,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Lapa",
+      "lat": -23.5238,
+      "lng": -46.7018,
+      "opportunity_score": 78.9,
+      "competition": {
+        "total_competitors": 18,
+        "density_per_km2": 1.43,
+        "average_rating": 4.3,
+        "total_reviews": 57,
+        "currently_open": 8,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 35,
+        "by_type": {},
+        "infrastructure_score": 54
+      },
+      "mobility": {
+        "total_transport_options": 20,
+        "by_type": {},
+        "mobility_score": 77
+      },
+      "attractiveness": {
+        "overall_score": 57.5,
+        "competition_score": 62.4,
+        "infrastructure_score": 79.1,
+        "mobility_score": 67.3,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    },
+    {
+      "name": "Moema",
+      "lat": -23.5997,
+      "lng": -46.6648,
+      "opportunity_score": 78.8,
+      "competition": {
+        "total_competitors": 23,
+        "density_per_km2": 1.83,
+        "average_rating": 4.3,
+        "total_reviews": 206,
+        "currently_open": 0,
+        "competition_level": "Baixa",
+        "top_competitors": []
+      },
+      "infrastructure": {
+        "total_facilities": 15,
+        "by_type": {},
+        "infrastructure_score": 67
+      },
+      "mobility": {
+        "total_transport_options": 17,
+        "by_type": {},
+        "mobility_score": 61
+      },
+      "attractiveness": {
+        "overall_score": 56.7,
+        "competition_score": 83.2,
+        "infrastructure_score": 45.2,
+        "mobility_score": 72.7,
+        "classification": "Simulado"
+      },
+      "data_source": "Simulado (Google Maps API não configurado)"
+    }
+  ]
+}
