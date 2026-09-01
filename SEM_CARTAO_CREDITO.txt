@@ -1,0 +1,120 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ✅ SISTEMA MODIFICADO - 100% GRATUITO SEM CARTÃO            ║
+╚══════════════════════════════════════════════════════════════╝
+
+🎉 BOA NOTÍCIA!
+===============
+Modifiquei o sistema para usar OpenStreetMap em vez do Google Maps.
+
+AGORA VOCÊ NÃO PRECISA:
+• ❌ Cartão de crédito
+• ❌ Conta no Google Cloud
+• ❌ Configurar nenhuma API
+• ❌ Pagar nada
+
+══════════════════════════════════════════════════════════════════
+
+🗺️ O QUE MUDOU?
+================
+
+ANTES:
+• Usava Google Maps (exige cartão)
+• Precisava configurar API Key
+• Limitado a $200 de crédito grátis
+
+AGORA:
+✅ Usa OpenStreetMap (100% grátis)
+✅ Sem necessidade de cadastro
+✅ Sem limite de uso
+✅ Funciona imediatamente
+
+══════════════════════════════════════════════════════════════════
+
+🚀 COMO USAR AGORA?
+===================
+
+É MUITO SIMPLES:
+
+1. O backend JÁ ESTÁ RODANDO ✅
+2. O frontend JÁ ESTÁ RODANDO ✅
+3. Apenas recarregue a página no navegador (F5)
+
+NÃO PRECISA FAZER MAIS NADA!
+
+══════════════════════════════════════════════════════════════════
+
+📊 O QUE FUNCIONA?
+==================
+
+✅ Mapa interativo de São Paulo
+✅ Visualização de regiões
+✅ Marcadores de oportunidades
+✅ Análise de localização
+✅ Busca por endereço (OpenStreetMap Nominatim - grátis!)
+✅ Dados demográficos do IBGE
+✅ Backend com análises inteligentes
+
+══════════════════════════════════════════════════════════════════
+
+⚠️ O QUE É DIFERENTE?
+=====================
+
+OpenStreetMap vs Google Maps:
+
+GOOGLE MAPS:
+• Visual mais moderno
+• Integração com Google Places (dados de concorrentes)
+• Exige cartão de crédito
+
+OPENSTREETMAP:
+✅ 100% gratuito
+✅ Open source
+✅ Muito utilizado mundialmente
+• Visual mais simples (mas funcional)
+• Sem integração com places (mas usamos API IBGE)
+
+══════════════════════════════════════════════════════════════════
+
+🌐 TECNOLOGIAS GRATUITAS USADAS:
+=================================
+
+✅ OpenStreetMap - Mapas interativos
+✅ Leaflet.js - Biblioteca de mapas
+✅ Nominatim - Geocoding (busca de endereços)
+✅ IBGE API - Dados demográficos do Brasil
+✅ FastAPI - Backend em Python
+✅ Next.js - Frontend React
+
+TUDO 100% GRATUITO E OPEN SOURCE!
+
+══════════════════════════════════════════════════════════════════
+
+✅ PRONTO PARA USAR!
+====================
+
+Status Atual:
+✅ Backend rodando (porta 8000)
+✅ Frontend rodando (porta 3000)
+✅ Mapas funcionando (OpenStreetMap)
+✅ Sem erros de API Key
+✅ Totalmente gratuito
+
+🌐 Acesse: http://localhost:3000
+
+══════════════════════════════════════════════════════════════════
+
+💡 DICA:
+========
+Se no futuro você quiser voltar para o Google Maps
+(visual mais bonito), basta:
+
+1. Adicionar cartão no Google Cloud
+2. Configurar a API Key
+3. Descomentar o código antigo
+
+Mas por enquanto, OpenStreetMap funciona PERFEITAMENTE!
+
+══════════════════════════════════════════════════════════════════
+
+🎉 APROVEITE SEU SISTEMA SEM CUSTOS!
+====================================

@@ -1,0 +1,100 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🚀 GUIA RÁPIDO - SUBIR PARA GITHUB (5 MINUTOS)             ║
+╚══════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 1: AUTOMÁTICO (RECOMENDADO)
+==================================
+
+1️⃣  Instale o Git:
+   📥 https://git-scm.com/download/win
+
+2️⃣  Crie repositório no GitHub:
+   🌐 https://github.com/new
+   • Nome: radar-de-oportunidades
+   • ☐ NÃO marque nenhuma opção extra
+   • Clique "Create repository"
+
+3️⃣  Execute o script:
+   📂 Duplo clique em: setup-git.cmd
+
+4️⃣  Siga as instruções na tela
+   • Digite seu nome
+   • Digite seu email
+   • Cole a URL do repositório
+
+✅ PRONTO! Projeto no GitHub!
+
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 2: MANUAL
+===============
+
+Se preferir fazer manualmente, abra PowerShell e execute:
+
+# 1. Configurar Git (primeira vez)
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+
+# 2. Inicializar repositório
+cd "c:\Users\25011991\Downloads\Radar-de-Oportunidades-main"
+git init
+
+# 3. Adicionar arquivos
+git add .
+
+# 4. Criar commit
+git commit -m "Initial commit"
+
+# 5. Conectar com GitHub (substitua pela SUA URL)
+git remote add origin https://github.com/SEU-USUARIO/radar-de-oportunidades.git
+git branch -M main
+
+# 6. Enviar para GitHub
+git push -u origin main
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  ATENÇÃO: Personal Access Token
+===================================
+
+Se o GitHub pedir senha e rejeitar:
+
+1. Acesse: https://github.com/settings/tokens
+2. "Generate new token (classic)"
+3. Marque: ☑ repo
+4. Copie o token
+5. Use o token como senha
+
+═══════════════════════════════════════════════════════════════
+
+✅ ARQUIVOS PROTEGIDOS (não vão para o GitHub)
+===============================================
+
+✅ backend\.env (suas chaves de API)
+✅ frontend\.env.local (suas configurações)
+✅ node_modules/ (dependências)
+✅ google-credentials.json
+
+O .gitignore JÁ PROTEGE esses arquivos automaticamente!
+
+═══════════════════════════════════════════════════════════════
+
+📝 DEPOIS DE SUBIR - Comandos Úteis
+====================================
+
+Quando fizer mudanças no projeto:
+
+git add .
+git commit -m "Descrição da mudança"
+git push
+
+═══════════════════════════════════════════════════════════════
+
+🎉 É ISSO!
+==========
+
+Escolha a OPÇÃO 1 (script automático) para mais facilidade!
+
+═══════════════════════════════════════════════════════════════

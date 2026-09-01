@@ -1,0 +1,11 @@
+# Dependências simplificadas para Python 3.13
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+python-dotenv
+httpx
+requests
+openai
+google-cloud-speech
+google-auth

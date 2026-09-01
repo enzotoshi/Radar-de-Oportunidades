@@ -1,0 +1,204 @@
+╔══════════════════════════════════════════════════════════════╗
+║  📚 COMANDOS GIT - GUIA DE REFERÊNCIA RÁPIDA                ║
+╚══════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════
+
+🔄 ATUALIZAR REPOSITÓRIO (MAIS USADO)
+======================================
+
+git add .                          # Adiciona TODAS as mudanças
+git commit -m "mensagem"           # Cria commit
+git push                           # Envia para GitHub
+
+Atalho (tudo junto):
+git add . && git commit -m "mensagem" && git push
+
+═══════════════════════════════════════════════════════════════
+
+📊 VER STATUS E MUDANÇAS
+=========================
+
+git status                         # Ver arquivos modificados
+git diff                           # Ver mudanças linha por linha
+git diff arquivo.txt               # Ver mudanças em arquivo específico
+git log                            # Histórico de commits
+git log --oneline                  # Histórico resumido
+
+═══════════════════════════════════════════════════════════════
+
+⬇️ BAIXAR DO GITHUB
+====================
+
+git pull                           # Baixa mudanças do GitHub
+git pull origin main               # Baixa da branch main
+git fetch                          # Verifica mudanças sem baixar
+
+═══════════════════════════════════════════════════════════════
+
+🌿 BRANCHES (AVANÇADO)
+======================
+
+git branch                         # Listar branches
+git branch nova-feature            # Criar branch
+git checkout nova-feature          # Trocar de branch
+git checkout -b nova-feature       # Criar E trocar
+git merge nova-feature             # Mesclar branch
+
+═══════════════════════════════════════════════════════════════
+
+⚙️ CONFIGURAÇÃO
+================
+
+git config --global user.name "Nome"        # Configurar nome
+git config --global user.email "email"      # Configurar email
+git config --list                           # Ver configurações
+git remote -v                               # Ver repositórios remotos
+
+═══════════════════════════════════════════════════════════════
+
+🔙 DESFAZER MUDANÇAS
+====================
+
+git restore arquivo.txt            # Desfazer mudanças em arquivo
+git restore .                      # Desfazer todas mudanças
+git reset HEAD~1                   # Desfazer último commit
+git reset --hard HEAD~1            # Desfazer e apagar mudanças
+
+⚠️  CUIDADO: --hard apaga mudanças permanentemente!
+
+═══════════════════════════════════════════════════════════════
+
+🗑️ REMOVER ARQUIVOS
+===================
+
+git rm arquivo.txt                 # Remove arquivo
+git rm -r pasta/                   # Remove pasta
+git rm --cached arquivo.txt        # Remove do Git mas mantém local
+
+═══════════════════════════════════════════════════════════════
+
+🔍 BUSCAR E FILTRAR
+===================
+
+git log --author="Nome"            # Commits de autor específico
+git log --since="2 weeks ago"      # Commits das últimas 2 semanas
+git log --grep="bug"               # Buscar por palavra em commits
+git show COMMIT_HASH               # Ver detalhes de um commit
+
+═══════════════════════════════════════════════════════════════
+
+🆘 RESOLVER CONFLITOS
+=====================
+
+1. git pull                        # Baixar mudanças
+2. Abrir arquivos com conflito
+3. Editar e resolver manualmente
+4. git add arquivo.txt             # Marcar como resolvido
+5. git commit -m "Resolve conflito"
+6. git push
+
+═══════════════════════════════════════════════════════════════
+
+💾 STASH (GUARDAR MUDANÇAS TEMPORARIAMENTE)
+===========================================
+
+git stash                          # Guardar mudanças
+git stash list                     # Listar stashes
+git stash pop                      # Recuperar última mudança
+git stash apply                    # Aplicar sem remover do stash
+git stash drop                     # Remover último stash
+
+═══════════════════════════════════════════════════════════════
+
+🏷️ TAGS (VERSÕES)
+==================
+
+git tag v1.0.0                     # Criar tag
+git tag -a v1.0.0 -m "Versão 1.0"  # Tag com mensagem
+git push --tags                    # Enviar tags
+git tag -l                         # Listar tags
+
+═══════════════════════════════════════════════════════════════
+
+🔐 CREDENCIAIS
+==============
+
+# Cache de senha por 1 hora
+git config --global credential.helper cache
+
+# Cache de senha por 4 horas
+git config --global credential.helper 'cache --timeout=14400'
+
+# Usar Personal Access Token
+Quando pedir senha, use o token do GitHub
+
+═══════════════════════════════════════════════════════════════
+
+📝 BOAS PRÁTICAS
+================
+
+✅ Commits frequentes e pequenos
+✅ Mensagens descritivas
+✅ Testar antes de commitar
+✅ Não commitar arquivos sensíveis (.env)
+✅ Usar .gitignore
+✅ Pull antes de push
+✅ Revisar mudanças (git diff) antes de commitar
+
+❌ Não fazer commit de:
+   • node_modules/
+   • .env
+   • Chaves de API
+   • Senhas
+
+═══════════════════════════════════════════════════════════════
+
+⚡ COMANDOS RÁPIDOS MAIS USADOS
+================================
+
+1. git status                      # Sempre primeiro!
+2. git add .                       # Adicionar tudo
+3. git commit -m "msg"             # Commitar
+4. git push                        # Enviar
+
+Ou tudo junto:
+git add . && git commit -m "msg" && git push
+
+═══════════════════════════════════════════════════════════════
+
+🎯 PARA ESTE PROJETO
+====================
+
+# Atualizar GitHub rapidamente
+atualizar-github.cmd
+
+# Ver o que mudou
+git status
+
+# Enviar mudanças
+git add .
+git commit -m "Adiciona nova funcionalidade"
+git push
+
+# Baixar mudanças do GitHub
+git pull
+
+═══════════════════════════════════════════════════════════════
+
+💡 ATALHOS ÚTEIS
+================
+
+# Ver histórico bonito
+git log --graph --oneline --all --decorate
+
+# Desfazer último commit (mantém mudanças)
+git reset --soft HEAD~1
+
+# Ver quem modificou cada linha
+git blame arquivo.txt
+
+# Comparar branches
+git diff branch1..branch2
+
+═══════════════════════════════════════════════════════════════

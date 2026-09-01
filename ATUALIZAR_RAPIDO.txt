@@ -1,0 +1,138 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🔄 GUIA RÁPIDO - ATUALIZAR GITHUB                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 1: AUTOMÁTICO (MAIS FÁCIL) ⭐
+====================================
+
+📂 Duplo clique em: atualizar-github.cmd
+
+O script vai:
+✅ Adicionar todas as mudanças
+✅ Criar commit automaticamente
+✅ Enviar para o GitHub
+✅ Mostrar resultado
+
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 2: MANUAL (3 COMANDOS)
+=============================
+
+Abra PowerShell nesta pasta e execute:
+
+# 1. Adicionar mudanças
+git add .
+
+# 2. Criar commit
+git commit -m "Descrição da mudança"
+
+# 3. Enviar
+git push
+
+PRONTO! ✅
+
+═══════════════════════════════════════════════════════════════
+
+📝 EXEMPLOS DE MENSAGENS DE COMMIT
+===================================
+
+Boas mensagens:
+✅ "Adiciona análise com ChatGPT"
+✅ "Implementa sugestões de busca"
+✅ "Corrige erro no mapa"
+✅ "Atualiza README"
+✅ "Remove arquivos desnecessários"
+
+Mensagens ruins:
+❌ "update"
+❌ "mudanças"
+❌ "teste"
+
+═══════════════════════════════════════════════════════════════
+
+🔍 VERIFICAR ANTES DE ENVIAR
+=============================
+
+Veja o que será enviado:
+
+git status
+
+Veja as mudanças específicas:
+
+git diff
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  ARQUIVOS QUE NÃO VÃO PRO GITHUB
+====================================
+
+Estes são protegidos pelo .gitignore:
+
+✅ backend\.env (suas chaves)
+✅ frontend\.env.local (suas configs)
+✅ node_modules/
+✅ __pycache__/
+✅ google-credentials.json
+
+SEM PREOCUPAÇÃO - suas chaves estão seguras! 🔒
+
+═══════════════════════════════════════════════════════════════
+
+🆘 SE DER ERRO
+==============
+
+❌ "Permission denied"
+→ Use Personal Access Token:
+  https://github.com/settings/tokens
+
+❌ "No changes"
+→ Você já está atualizado!
+
+❌ "Conflict"
+→ Execute: git pull
+→ Depois: git push
+
+❌ "Remote repository not found"
+→ Verifique se o repositório existe no GitHub
+→ Execute: git remote -v
+
+═══════════════════════════════════════════════════════════════
+
+🎯 RECOMENDAÇÃO
+===============
+
+Use OPÇÃO 1: atualizar-github.cmd
+
+É rápido, fácil e sem complicação!
+
+═══════════════════════════════════════════════════════════════
+
+📋 FLUXO NORMAL DE TRABALHO
+============================
+
+1. Faça suas mudanças no código
+2. Execute: atualizar-github.cmd
+3. Digite descrição da mudança
+4. Pronto! ✅
+
+Ou manualmente:
+git add .
+git commit -m "descrição"
+git push
+
+═══════════════════════════════════════════════════════════════
+
+💡 DICA PRO
+===========
+
+Atualize sempre que:
+• Adicionar nova funcionalidade
+• Corrigir bugs
+• Atualizar documentação
+• No final do dia de trabalho
+
+Não precisa atualizar a cada linha mudada!
+
+═══════════════════════════════════════════════════════════════

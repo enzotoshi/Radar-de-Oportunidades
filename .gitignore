@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Environment variables (NÃO COMITAR SUAS CHAVES!)
+.env
+.env.local
+backend/.env
+frontend/.env.local
+
+# Google Cloud credentials (NÃO COMITAR!)
+google-credentials.json
+backend/google-credentials.json
+
+# Node
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+htmlcov/

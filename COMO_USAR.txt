@@ -1,0 +1,215 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🎯 RADAR DE OPORTUNIDADES - GUIA DE USO COMPLETO          ║
+╚══════════════════════════════════════════════════════════════╝
+
+✅ SISTEMA 100% FUNCIONAL - SEM CARTÃO DE CRÉDITO!
+===================================================
+
+O sistema já funciona perfeitamente COM:
+✅ Mapas interativos (OpenStreetMap - grátis)
+✅ Sugestões de busca automática (Nominatim - grátis)
+✅ Análise de localização
+✅ Dados demográficos (IBGE - grátis)
+
+══════════════════════════════════════════════════════════════════
+
+🤖 ANÁLISE COM IA (ChatGPT) - OPCIONAL MAS RECOMENDADO
+========================================================
+
+Para ter análises COMPLETAS com insights da IA, configure:
+
+📌 PASSO 1: Obter chave do ChatGPT
+-----------------------------------
+1. Acesse: https://platform.openai.com/api-keys
+2. Faça login (ou crie conta gratuita)
+3. Clique em "Create new secret key"
+4. Copie a chave (começa com sk-)
+5. Guarde em local seguro
+
+📌 PASSO 2: Adicionar créditos (mínimo $5)
+------------------------------------------
+1. Vá em: https://platform.openai.com/settings/organization/billing
+2. Clique em "Add payment method"
+3. Adicione cartão de crédito
+4. Adicione $5-10 de crédito
+
+💰 CUSTO: ~$0.01 por análise (muito barato!)
+     Com $10 você faz aproximadamente 1000 análises!
+
+📌 PASSO 3: Configurar no sistema
+----------------------------------
+1. Abra o arquivo: backend\.env
+2. Encontre a linha:
+   OPENAI_API_KEY=sua_chave_openai_aqui
+3. Substitua pela sua chave:
+   OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxx
+4. Salve o arquivo (Ctrl+S)
+
+📌 PASSO 4: Reiniciar o backend
+--------------------------------
+1. Feche o terminal do backend (Ctrl+C)
+2. Inicie novamente:
+   Duplo clique em: INICIAR_BACKEND.cmd
+3. Aguarde iniciar
+4. Pronto! Agora as análises usarão ChatGPT
+
+══════════════════════════════════════════════════════════════════
+
+🗺️ COMO USAR O SISTEMA
+=======================
+
+1️⃣ BUSCAR LOCALIZAÇÃO
+----------------------
+• Digite um endereço no campo de busca
+• Exemplo: "Avenida Paulista, 1000, São Paulo"
+• Sugestões automáticas aparecerão enquanto você digita
+• Clique na sugestão desejada
+
+2️⃣ ESCOLHER NEGÓCIO
+--------------------
+• Selecione o tipo de negócio no dropdown
+• Opções: Cafeteria, Restaurante, Academia, etc
+• O sistema mostra investimento mínimo
+
+3️⃣ DEFINIR ORÇAMENTO
+---------------------
+• Use o slider para definir seu orçamento
+• Mínimo: R$ 20.000
+• Máximo: R$ 1.000.000
+
+4️⃣ ANALISAR
+-----------
+• Clique no botão "Analisar Local"
+• Aguarde alguns segundos
+• A análise completa aparecerá
+
+══════════════════════════════════════════════════════════════════
+
+📊 O QUE A ANÁLISE MOSTRA (COM ChatGPT)
+========================================
+
+✅ Score de Oportunidade (0-100)
+✅ Resumo executivo da localização
+✅ Análise de concorrência detalhada
+✅ Demografia do público-alvo
+✅ Infraestrutura da região
+✅ Mobilidade e transporte
+✅ Análise SWOT completa
+   - Forças
+   - Fraquezas
+   - Oportunidades
+   - Ameaças
+✅ Projeções financeiras
+✅ Insights práticos e acionáveis
+✅ Recomendações específicas
+
+══════════════════════════════════════════════════════════════════
+
+🎯 EXEMPLOS DE ANÁLISE
+=======================
+
+LOCALIZAÇÃO BOA (Score 70-85):
+• Baixa concorrência
+• Alto fluxo de pessoas
+• Boa infraestrutura
+• Transporte público acessível
+• Público-alvo adequado
+
+LOCALIZAÇÃO REGULAR (Score 40-69):
+• Concorrência moderada
+• Infraestrutura média
+• Necessita ajustes no modelo de negócio
+
+LOCALIZAÇÃO FRACA (Score 0-39):
+• Alta concorrência
+• Baixo fluxo
+• Infraestrutura deficiente
+• Alto risco
+
+══════════════════════════════════════════════════════════════════
+
+💡 DICAS DE USO
+===============
+
+1. Seja ESPECÍFICO no endereço
+   ✅ Bom: "Rua Augusta, 2000, São Paulo, SP"
+   ❌ Ruim: "Centro"
+
+2. Use as SUGESTÕES automáticas
+   • Elas garantem endereço correto
+   • Coordenadas precisas
+
+3. Teste VÁRIAS localizações
+   • Compare scores
+   • Veja diferentes bairros
+
+4. Considere o ORÇAMENTO real
+   • Impacta nas recomendações da IA
+   • Ajuste conforme sua realidade
+
+5. Leia os INSIGHTS completos
+   • IA fornece dicas práticas
+   • Ações recomendadas
+
+══════════════════════════════════════════════════════════════════
+
+🐛 SOLUÇÃO DE PROBLEMAS
+========================
+
+❌ "Sugestões não aparecem"
+→ Digite pelo menos 3 caracteres
+→ Aguarde 1-2 segundos
+→ Verifique conexão internet
+
+❌ "Análise retorna dados básicos"
+→ ChatGPT API não configurada
+→ Siga o PASSO 1-4 acima
+→ Configure a chave no backend/.env
+
+❌ "Endereço não encontrado"
+→ Seja mais específico
+→ Adicione cidade e estado
+→ Use sugestões automáticas
+
+❌ "Backend não responde"
+→ Verifique se backend está rodando
+→ Deve estar em: http://localhost:8000
+→ Reinicie: INICIAR_BACKEND.cmd
+
+══════════════════════════════════════════════════════════════════
+
+📁 ARQUIVOS IMPORTANTES
+========================
+
+✅ backend/.env → Configuração das APIs
+✅ INICIAR_BACKEND.cmd → Inicia backend
+✅ INICIAR_FRONTEND.cmd → Inicia frontend
+✅ start.cmd → Inicia ambos
+✅ SEM_CARTAO_CREDITO.txt → Explicação do OpenStreetMap
+✅ README.md → Documentação completa
+
+══════════════════════════════════════════════════════════════════
+
+🌐 LINKS ÚTEIS
+==============
+
+Backend: http://localhost:8000
+Frontend: http://localhost:3000
+API Docs: http://localhost:8000/docs
+OpenAI Platform: https://platform.openai.com
+
+══════════════════════════════════════════════════════════════════
+
+✨ APROVEITE O SISTEMA!
+=======================
+
+Agora você tem:
+• 🗺️ Mapas interativos gratuitos
+• 🔍 Busca com autocompletar
+• 🤖 Análise com IA (opcional)
+• 📊 Insights profissionais
+• 💰 Sistema completo e funcional
+
+BOA SORTE COM SUAS ANÁLISES! 🚀
+
+══════════════════════════════════════════════════════════════════

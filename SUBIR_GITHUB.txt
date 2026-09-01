@@ -1,0 +1,217 @@
+╔══════════════════════════════════════════════════════════════╗
+║  📤 COMO SUBIR O PROJETO PARA O GITHUB                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+⏱️ TEMPO: 10-15 minutos
+📋 PASSO A PASSO COMPLETO
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 1: Instalar Git
+======================
+
+1. Acesse: https://git-scm.com/download/win
+
+2. Baixe o instalador para Windows
+
+3. Execute o instalador:
+   • Aceite as opções padrão
+   • Marque "Git Bash Here" e "Git GUI Here"
+   • Clique em "Next" até finalizar
+
+4. Reinicie o terminal após instalação
+
+5. Verifique se instalou:
+   git --version
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 2: Criar Repositório no GitHub
+=====================================
+
+1. Acesse: https://github.com
+
+2. Faça login (ou crie conta se não tiver)
+
+3. Clique no botão "+" no canto superior direito
+
+4. Selecione "New repository"
+
+5. Configure o repositório:
+   • Name: radar-de-oportunidades
+   • Description: Sistema de análise de oportunidades com IA
+   • ☐ Public (ou Private se preferir)
+   • ☐ NÃO marque "Add README" (já temos)
+   • ☐ NÃO marque "Add .gitignore" (já temos)
+   • ☐ NÃO marque "Choose a license"
+
+6. Clique em "Create repository"
+
+7. COPIE a URL que aparecer (exemplo):
+   https://github.com/seu-usuario/radar-de-oportunidades.git
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 3: Configurar Git Local (PRIMEIRA VEZ)
+=============================================
+
+Abra o PowerShell e execute:
+
+# Configure seu nome
+git config --global user.name "Seu Nome"
+
+# Configure seu email (use o mesmo do GitHub)
+git config --global user.email "seu@email.com"
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 4: Inicializar Git no Projeto
+====================================
+
+Abra o PowerShell nesta pasta e execute:
+
+cd "c:\Users\25011991\Downloads\Radar-de-Oportunidades-main"
+
+# Inicializar repositório Git
+git init
+
+# Adicionar todos os arquivos
+git add .
+
+# Criar primeiro commit
+git commit -m "Initial commit - Radar de Oportunidades"
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 5: Conectar com GitHub
+=============================
+
+# Adicionar repositório remoto (SUBSTITUA pela SUA URL)
+git remote add origin https://github.com/SEU-USUARIO/radar-de-oportunidades.git
+
+# Renomear branch para main (padrão do GitHub)
+git branch -M main
+
+# Enviar para o GitHub
+git push -u origin main
+
+Se pedir usuário e senha:
+• Usuário: seu nome de usuário do GitHub
+• Senha: use um Personal Access Token (veja PASSO 6)
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 6: Personal Access Token (se necessário)
+===============================================
+
+Se o GitHub pedir senha e rejeitar sua senha normal:
+
+1. Vá em: https://github.com/settings/tokens
+
+2. Clique em "Generate new token" > "Generate new token (classic)"
+
+3. Configure:
+   • Note: "Radar Oportunidades"
+   • Expiration: 90 days (ou escolha)
+   • Marque: ☑ repo (todas as opções de repo)
+
+4. Clique em "Generate token"
+
+5. COPIE O TOKEN (só aparece uma vez!)
+
+6. Use o token como senha quando o Git pedir
+
+══════════════════════════════════════════════════════════════════
+
+PASSO 7: Verificar no GitHub
+=============================
+
+1. Acesse: https://github.com/SEU-USUARIO/radar-de-oportunidades
+
+2. Você deve ver todos os arquivos do projeto!
+
+══════════════════════════════════════════════════════════════════
+
+📝 COMANDOS ÚTEIS PARA O FUTURO
+================================
+
+# Ver status dos arquivos
+git status
+
+# Adicionar arquivos modificados
+git add .
+
+# Criar commit
+git commit -m "Descrição da mudança"
+
+# Enviar para GitHub
+git push
+
+# Puxar mudanças do GitHub
+git pull
+
+# Ver histórico de commits
+git log
+
+══════════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANTE: Arquivos Sensíveis
+==================================
+
+NUNCA suba para o GitHub:
+❌ backend\.env (suas chaves de API)
+❌ frontend\.env.local (suas configurações)
+❌ node_modules/ (dependências)
+❌ __pycache__/ (cache Python)
+
+✅ Estes arquivos JÁ ESTÃO no .gitignore (protegidos)
+
+Se acidentalmente subir arquivo sensível:
+1. Remova do repositório
+2. Gere novas chaves de API
+3. Nunca reutilize chaves expostas
+
+══════════════════════════════════════════════════════════════════
+
+🎉 PRONTO!
+==========
+
+Seu projeto agora está no GitHub!
+
+Compartilhe com: https://github.com/SEU-USUARIO/radar-de-oportunidades
+
+══════════════════════════════════════════════════════════════════
+
+📋 CHECKLIST FINAL
+==================
+
+☐ Git instalado
+☐ Repositório criado no GitHub
+☐ Git configurado (name e email)
+☐ Projeto inicializado (git init)
+☐ Arquivos adicionados (git add .)
+☐ Commit criado
+☐ Remote adicionado (git remote add)
+☐ Push realizado (git push)
+☐ Projeto visível no GitHub
+
+══════════════════════════════════════════════════════════════════
+
+🆘 PROBLEMAS COMUNS
+===================
+
+❌ "Git não reconhecido"
+→ Instale o Git e reinicie o terminal
+
+❌ "Permission denied"
+→ Use Personal Access Token em vez de senha
+
+❌ "Remote origin already exists"
+→ Execute: git remote remove origin
+→ Depois adicione novamente
+
+❌ "Failed to push"
+→ Execute: git pull origin main --rebase
+→ Depois: git push
+
+══════════════════════════════════════════════════════════════════
