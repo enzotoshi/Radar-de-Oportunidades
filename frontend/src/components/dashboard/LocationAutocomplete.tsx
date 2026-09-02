@@ -21,6 +21,11 @@ export default function LocationAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Sincroniza o valor interno quando o valor externo muda
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
+
   // Fechar sugestões ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

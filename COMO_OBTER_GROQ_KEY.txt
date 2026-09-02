@@ -1,0 +1,77 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🚀 COMO OBTER SUA CHAVE GROQ (100% GRÁTIS)                ║
+╚══════════════════════════════════════════════════════════════╝
+
+A Groq oferece acesso GRATUITO à IA Llama 3 (tão boa quanto ChatGPT)!
+
+═══════════════════════════════════════════════════════════════
+
+📋 PASSO A PASSO:
+
+1️⃣  Acesse: https://console.groq.com
+
+2️⃣  Clique em "Sign In" ou "Get Started"
+
+3️⃣  Faça login com Google/GitHub (ou crie uma conta)
+
+4️⃣  No menu lateral, clique em "API Keys"
+
+5️⃣  Clique em "Create API Key"
+
+6️⃣  Dê um nome (ex: "Radar de Oportunidades")
+
+7️⃣  COPIE a chave que aparece (começa com "gsk_...")
+
+8️⃣  Cole no arquivo backend\.env:
+    GROQ_API_KEY=gsk_sua_chave_aqui
+
+9️⃣  Salve o arquivo e reinicie o backend!
+
+═══════════════════════════════════════════════════════════════
+
+✅ PRONTO! Agora suas análises usarão IA de verdade!
+
+═══════════════════════════════════════════════════════════════
+
+💡 VANTAGENS DO GROQ:
+
+✅ 100% GRATUITO (sem cartão de crédito)
+✅ Llama 3.3 (70B) - modelo poderoso
+✅ Ultra rápido (mais rápido que GPT-4)
+✅ Sem limite de uso para hobby
+✅ Sem expiração
+
+═══════════════════════════════════════════════════════════════
+
+🆚 GROQ vs OPENAI:
+
+GROQ (Llama 3):
+✅ Grátis
+✅ Rápido
+✅ Sem limite
+❌ Menos conhecido
+
+OPENAI (GPT):
+❌ Pago ($$$)
+✅ Mais famoso
+❌ Limite de tokens
+✅ Mais treinado
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+
+- NÃO compartilhe sua chave API com ninguém
+- Se vazar, gere uma nova no console Groq
+- Cada chave é pessoal e intransferível
+
+═══════════════════════════════════════════════════════════════
+
+🔧 TESTANDO:
+
+Após configurar, reinicie o backend e acesse:
+http://localhost:8000
+
+Se ver "groq_ai: connected" → SUCESSO! 🎉
+
+═══════════════════════════════════════════════════════════════

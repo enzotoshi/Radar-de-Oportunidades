@@ -9,4 +9,4 @@
  * Desenvolvedor responsável: [SEU NOME]
  */
 
-export { default as MapAnalysis } from '../../components/MapAnalysis'
+export { default as MapAnalysis } from './MapAnalysis'

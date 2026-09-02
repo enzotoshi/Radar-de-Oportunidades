@@ -13,7 +13,7 @@ try:
     GOOGLE_SPEECH_AVAILABLE = True
 except ImportError:
     GOOGLE_SPEECH_AVAILABLE = False
-    print("⚠️ Google Cloud Speech não instalado - usando modo fallback")
+    print("Google Cloud Speech não instalado - recurso de voz em modo fallback")
 
 from dotenv import load_dotenv
 

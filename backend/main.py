@@ -29,11 +29,11 @@ from ml_engine import (
     BUSINESSES_DATA,
 )
 
-# Importa novos serviços de APIs
-from openai_service import (
+# Importa serviço de IA (Groq - GRATUITO)
+from groq_service import (
     generate_ai_explanation,
     generate_simulation_insights,
-    test_openai_connection,
+    test_groq_connection,
 )
 from ibge_service import (
     get_region_demographics,
@@ -46,6 +46,7 @@ from speech_service import (
 
 # Importa AI Hotspot Finder
 from ai_hotspot_finder import AIHotspotFinder
+from public_data_service import analyze_public_data, PublicDataUnavailable
 
 app = FastAPI(
     title="Radar de Oportunidades Inteligente",
@@ -76,7 +77,7 @@ app.add_middleware(
 @app.get("/")
 def health_check():
     """Health check com status das APIs integradas."""
-    openai_status = test_openai_connection()
+    groq_status = test_groq_connection()
     ibge_status = test_ibge_connection()
     speech_status = test_speech_connection()
     
@@ -85,7 +86,7 @@ def health_check():
         "service": "Radar de Oportunidades Inteligente",
         "version": "2.0.0",
         "apis": {
-            "openai": "connected" if openai_status else "fallback mode",
+            "groq_ai": "connected" if groq_status else "fallback mode",
             "ibge": "connected" if ibge_status else "fallback mode",
             "google_speech": "connected" if speech_status else "fallback mode",
         },
@@ -94,89 +95,12 @@ def health_check():
 
 # ── Análise de Oportunidade ─────────────────────────────────────────────────────
 
-@app.post("/api/analyze", response_model=AnalyzeResponse)
+@app.post("/api/analyze", response_model=AnalyzeResponse, deprecated=True)
 def analyze_opportunity(req: AnalyzeRequest):
-    """
-    Analisa a oportunidade de negócio para uma região e tipo de negócio.
-    Retorna score, métricas detalhadas e explicação gerada por IA (OpenAI).
-    Dados demográficos reais do IBGE quando disponível.
-    """
-    region_id = req.region.lower().replace(" ", "_")
-    business_id = req.business_type.lower().replace(" ", "_")
-
-    if region_id not in REGIONS_DATA:
-        raise HTTPException(status_code=404, detail=f"Região '{req.region}' não encontrada.")
-    if business_id not in BUSINESSES_DATA:
-        raise HTTPException(status_code=404, detail=f"Tipo de negócio '{req.business_type}' não encontrado.")
-
-    # Busca dados demográficos do IBGE
-    ibge_demographics = get_region_demographics(region_id)
-    
-    # Calcula score de oportunidade
-    result = calculate_opportunity_score(region_id, business_id, req.budget)
-    score = result["score"]
-    raw_metrics = result["metrics"]
-    region_data = result["region"]
-    business_data = result["business"]
-
-    # Atualiza dados da região com informações do IBGE se disponível
-    if ibge_demographics.get("population"):
-        region_data["ibge_population"] = ibge_demographics["population"]
-        region_data["ibge_gdp_per_capita"] = ibge_demographics.get("gdp_per_capita")
-        region_data["data_source"] = ibge_demographics["data_source"]
-
-    # Tenta gerar explicação com OpenAI
-    try:
-        explanation = generate_ai_explanation(
-            region=region_data["name"],
-            business_type=business_data["name"],
-            score=score,
-            metrics=raw_metrics,
-            region_data=region_data,
-            business_data=business_data,
-        )
-        # Determina risk_level baseado no score
-        if score >= 70:
-            risk_level = "low"
-            roi = "18% a 35% a.a."
-        elif score >= 50:
-            risk_level = "medium"
-            roi = "8% a 18% a.a."
-        elif score >= 35:
-            risk_level = "medium"
-            roi = "0% a 10% a.a."
-        else:
-            risk_level = "high"
-            roi = "negativo no curto prazo"
-    except Exception as e:
-        print(f"Erro ao gerar explicação com OpenAI: {e}")
-        # Fallback para explicação simples
-        explanation, risk_level, roi = generate_explanation(region_id, business_id, score, raw_metrics)
-
-    similar = find_similar_regions(region_id, business_id)
-
-    metrics = {
-        k: MetricDetail(
-            value=v["value"],
-            label=v["label"],
-            description=v["description"],
-        )
-        for k, v in raw_metrics.items()
-    }
-
-    recommendation = _build_recommendation(score, risk_level)
-
-    return AnalyzeResponse(
-        opportunity_score=score,
-        metrics=metrics,
-        explanation=explanation,
-        similar_regions=[
-            SimilarRegion(name=s["name"], score=s["score"], similarity=s["similarity"])
-            for s in similar
-        ],
-        recommendation=recommendation,
-        risk_level=risk_level,
-        estimated_roi=roi,
+    """Impede análises sem coordenadas, que antes usavam dados cadastrados fictícios."""
+    raise HTTPException(
+        status_code=422,
+        detail="Selecione um endereço ou ponto no mapa e use /api/analyze-with-ai com latitude e longitude.",
     )
 
 
@@ -245,7 +169,7 @@ def simulate(req: SimulateRequest):
 
     delta = result["delta"]
     
-    # Tenta gerar explicação com OpenAI
+    # Tenta gerar explicação com Groq AI
     try:
         explanation = generate_simulation_insights(
             original_score=result["original_score"],
@@ -255,16 +179,16 @@ def simulate(req: SimulateRequest):
             new_competitors=req.new_competitors,
         )
     except Exception as e:
-        print(f"Erro ao gerar insights com OpenAI: {e}")
+        print(f"Erro ao gerar insights com IA: {e}")
         # Fallback para explicação simples
         if delta > 10:
-            explanation = f"Cenário otimista: o score deve subir {delta:.1f} pontos em 5 anos devido ao crescimento econômico e demográfico."
+            explanation = f"Cenário otimista: o score deve subir {delta:.1f} pontos em 5 anos."
         elif delta > 0:
-            explanation = f"Cenário levemente positivo: melhora gradual de {delta:.1f} pontos esperada."
+            explanation = f"Cenário levemente positivo: melhora de {delta:.1f} pontos."
         elif delta > -10:
-            explanation = f"Cenário estável com leve retração de {abs(delta):.1f} pontos, principalmente pela concorrência."
+            explanation = f"Cenário estável com leve retração de {abs(delta):.1f} pontos."
         else:
-            explanation = f"Cenário de alerta: queda de {abs(delta):.1f} pontos projetada. Reavalie a estratégia."
+            explanation = f"Cenário de alerta: queda de {abs(delta):.1f} pontos projetada."
 
     key_factors = []
     if req.population_growth > 10:
@@ -396,31 +320,30 @@ def analyze_custom_location(
 def api_status():
     """
     Retorna o status de conexão de todas as APIs integradas.
-    Útil para diagnóstico e configuração.
     """
-    openai_connected = test_openai_connection()
+    groq_connected = test_groq_connection()
     ibge_connected = test_ibge_connection()
     speech_connected = test_speech_connection()
     
     return {
         "apis": {
-            "openai": {
-                "status": "connected" if openai_connected else "disconnected",
-                "description": "Gera explicações inteligentes sobre oportunidades de negócio",
+            "groq_ai": {
+                "status": "connected" if groq_connected else "disconnected",
+                "description": "IA gratuita (Llama 3) para explicações inteligentes",
                 "fallback": "Explicações baseadas em regras (disponível)",
             },
             "ibge": {
                 "status": "connected" if ibge_connected else "disconnected",
-                "description": "Fornece dados demográficos reais de municípios brasileiros",
-                "fallback": "Dados simulados baseados em estimativas (disponível)",
+                "description": "Dados demográficos reais de municípios brasileiros",
+                "fallback": "Dados simulados (disponível)",
             },
             "google_speech": {
                 "status": "connected" if speech_connected else "disconnected",
-                "description": "Transcreve áudio para texto com alta precisão",
+                "description": "Transcreve áudio para texto",
                 "fallback": "Transcrição simulada (disponível)",
             },
         },
-        "overall_status": "operational" if any([openai_connected, ibge_connected, speech_connected]) else "fallback_mode",
+        "overall_status": "operational" if any([groq_connected, ibge_connected, speech_connected]) else "fallback_mode",
     }
 
 
@@ -438,33 +361,126 @@ class AIAnalysisRequest(BaseModel):
 @app.post("/api/analyze-with-ai")
 def analyze_location_with_ai(request: AIAnalysisRequest):
     """
-    Analisa uma localização específica usando ChatGPT/OpenAI.
-    
-    Retorna análise detalhada com:
-    - Score de oportunidade
-    - Análise de concorrência
-    - Demografia da região
-    - Análise SWOT
-    - Projeções financeiras
-    - Recomendações práticas
+    Analisa uma localização com dados públicos reais do OSM e IBGE.
+
+    Não há fallback simulado: se a fonte principal estiver indisponível, a API
+    responde com erro 503 em vez de fabricar valores.
     """
+    return _analyze_location_with_public_data(request)
+def _competition_level(density: float) -> str:
+    if density < 1:
+        return "Baixa"
+    if density < 3:
+        return "Moderada"
+    if density < 6:
+        return "Alta"
+    return "Muito alta"
+
+
+def _format_brl(value: float) -> str:
+    return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _format_compact_brl(value: float) -> str:
+    if value >= 1_000_000_000_000:
+        return f"R$ {value / 1_000_000_000_000:.2f} tri".replace(".", ",")
+    if value >= 1_000_000_000:
+        return f"R$ {value / 1_000_000_000:.2f} bi".replace(".", ",")
+    if value >= 1_000_000:
+        return f"R$ {value / 1_000_000:.2f} mi".replace(".", ",")
+    return _format_brl(value)
+
+
+def _analyze_location_with_public_data(request: AIAnalysisRequest) -> Dict[str, Any]:
     try:
-        from ai_location_analyzer import AILocationAnalyzer
-        
-        analyzer = AILocationAnalyzer()
-        
-        result = analyzer.analyze_location_with_ai(
-            address=request.address,
-            business_type=request.business_type,
-            lat=request.lat,
-            lng=request.lng,
-            budget=request.budget
+        analysis = analyze_public_data(
+            request.lat, request.lng, request.business_type, radius=1500
         )
-        
-        return result
-    
-    except Exception as e:
+        osm = analysis["osm"]
+        ibge = analysis["ibge"]
+        score = analysis["score"]["overall"]
+        population = analysis.get("population_area")
+        gdp = ibge.get("gdp")
+        city = ibge.get("city")
+
+        population_value = (
+            f"{int(population['value']):,}".replace(",", ".")
+            if population else "Indisponível"
+        )
+        # A variável 37 da tabela 5938 é publicada em milhares de reais.
+        gdp_value = _format_compact_brl(gdp["value"] * 1000) if gdp else "Indisponível"
+        competition_level = _competition_level(osm["competitor_density"])
+        risk_level = "low" if score >= 70 else "medium" if score >= 45 else "high"
+        place_name = city["name"] if city else request.address
+
+        explanation = (
+            f"Foram encontrados {osm['competitor_count']} estabelecimentos compatíveis "
+            f"com {request.business_type} em um raio de {analysis['radius_meters'] / 1000:.1f} km "
+            f"de {request.address}, resultando em densidade de "
+            f"{osm['competitor_density']:.2f} concorrentes/km² ({competition_level.lower()}). "
+            f"O OpenStreetMap também registra {osm['infrastructure_count']} equipamentos de "
+            f"infraestrutura e {osm['transport_count']} opções ou pontos de mobilidade nesse raio.\n\n"
+            f"A população exibida é uma estimativa em grade de 100 m do WorldPop, "
+            f"somada somente dentro do mesmo raio de 1,5 km. O índice é calculado "
+            f"somente dos registros do OSM: 45% concorrência, 30% infraestrutura e "
+            f"25% mobilidade. A cobertura do "
+            "OpenStreetMap varia por região; confirme a concorrência em pesquisa de campo."
+        )
+
+        markers = [
+            {
+                "id": item["id"],
+                "name": item["name"],
+                "category": request.business_type,
+                "lat": item["lat"],
+                "lng": item["lng"],
+                "competition": competition_level,
+                "potential": score,
+                "icon": "store",
+                "color": "blue",
+            }
+            for item in osm["competitors"]
+        ]
+
+        return {
+            "opportunity_score": score,
+            "metrics": {
+                "population": {
+                    "value": population_value,
+                    "label": "Pessoas na área",
+                    "description": f"Estimativa WorldPop {population['year']} · raio de 1,5 km" if population else "WorldPop indisponível nesta consulta",
+                },
+                "gdp": {
+                    "value": gdp_value,
+                    "label": "PIB municipal",
+                    "description": f"IBGE/SIDRA tabela 5938, {gdp['year']}" if gdp else "IBGE não retornou o dado",
+                },
+                "competition": {
+                    "value": str(osm["competitor_count"]),
+                    "label": "Concorrentes no OSM",
+                    "description": f"Raio de 1,5 km · {osm['competitor_density']:.2f}/km²",
+                },
+                "mobility": {
+                    "value": str(osm["transport_count"]),
+                    "label": "Pontos de mobilidade",
+                    "description": "Transporte e estacionamento mapeados no OSM",
+                },
+            },
+            "explanation": explanation,
+            "risk_level": risk_level,
+            "estimated_roi": "Não calculado sem dados financeiros reais",
+            "recommendation": _build_recommendation(score, risk_level),
+            "similar_regions": [],
+            "location": {"address": request.address, "lat": request.lat, "lng": request.lng},
+            "business_markers": markers,
+            "sources": analysis["sources"],
+            "collected_at": analysis["collected_at"],
+            "methodology": analysis["score"],
+        }
+    except PublicDataUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        print(f"Erro na análise com dados públicos: {exc}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Erro na análise com IA: {str(e)}"
-        )
+            status_code=500, detail=f"Erro na análise com dados públicos: {exc}"
+        ) from exc

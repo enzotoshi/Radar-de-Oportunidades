@@ -8,6 +8,7 @@ interface OpportunityMapProps {
   markers: BusinessMarker[];
   center?: { lat: number; lng: number };
   zoom?: number;
+  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void;
 }
 
 const defaultCenter = {
@@ -19,13 +20,16 @@ export default function OpportunityMap({
   markers,
   center = defaultCenter,
   zoom = 12,
+  onLocationSelect,
 }: OpportunityMapProps) {
   const [mapType, setMapType] = useState<'roadmap' | 'satellite'>('roadmap');
   const [selectedMarker, setSelectedMarker] = useState<BusinessMarker | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const circleRef = useRef<any>(null);
 
   // Carregar Leaflet apenas uma vez
   useEffect(() => {
@@ -101,9 +105,79 @@ export default function OpportunityMap({
     (map as any)._roadmapLayer = roadmapLayer;
     (map as any)._satelliteLayer = satelliteLayer;
 
+    // Adicionar evento de clique no mapa
+    map.on('click', async (e: any) => {
+      const { lat, lng } = e.latlng;
+      
+      // Atualizar localização selecionada
+      setSelectedLocation({ lat, lng });
+      
+      // Remover círculo anterior se existir
+      if (circleRef.current) {
+        circleRef.current.remove();
+      }
+      
+      // Criar círculo visual na área selecionada
+      const circle = L.circle([lat, lng], {
+        color: '#3B82F6',
+        fillColor: '#3B82F6',
+        fillOpacity: 0.2,
+        radius: 500, // Raio de 500 metros
+        weight: 3,
+      }).addTo(map);
+      
+      circleRef.current = circle;
+      
+      // Buscar endereço usando reverse geocoding (Nominatim)
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        const address = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+        
+        // Notificar componente pai
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address });
+        }
+        
+        // Adicionar popup informativo
+        circle.bindPopup(`
+          <div style="padding: 8px; min-width: 250px;">
+            <h3 style="font-weight: 600; color: #0F172A; margin-bottom: 8px; font-size: 14px;">
+              📍 Local Selecionado
+            </h3>
+            <p style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
+              ${address}
+            </p>
+            <div style="font-size: 11px; padding: 8px; background: #EFF6FF; border-radius: 6px;">
+              <p style="color: #1E40AF; margin: 0;">
+                💡 Área de análise: raio de 500m
+              </p>
+            </div>
+          </div>
+        `).openPopup();
+        
+      } catch (error) {
+        console.error('Erro ao buscar endereço:', error);
+        
+        if (onLocationSelect) {
+          onLocationSelect({ 
+            lat, 
+            lng, 
+            address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` 
+          });
+        }
+      }
+    });
+
     mapInstanceRef.current = map;
 
     return () => {
+      if (circleRef.current) {
+        circleRef.current.remove();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

@@ -21,6 +21,7 @@ interface SidebarProps {
   onAnalyze: () => void;
   onSimulate: () => void;
   isAnalyzing?: boolean;
+  isSimulating?: boolean;
 }
 
 const navigationItems = [
@@ -46,6 +47,7 @@ export default function Sidebar({
   onAnalyze,
   onSimulate,
   isAnalyzing = false,
+  isSimulating = false,
 }: SidebarProps) {
   const [activeNav, setActiveNav] = useState('overview');
   const [businessTypes, setBusinessTypes] = useState<string[]>(['Todos os tipos']);
@@ -289,13 +291,15 @@ export default function Sidebar({
         {/* Botão Simular */}
         <button
           onClick={onSimulate}
+          disabled={isSimulating}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 
                    bg-white text-success border-2 border-success rounded-lg font-medium text-sm
                    hover:bg-success-50
-                   transition-all duration-200"
+                   transition-all duration-200
+                   disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
         >
-          <BarChart3 className="w-4 h-4" />
-          Simular investimento
+          <BarChart3 className={`w-4 h-4 ${isSimulating ? 'animate-pulse' : ''}`} />
+          {isSimulating ? 'Simulando...' : 'Simular investimento'}
         </button>
 
         {/* Informação de atualização */}

@@ -24,39 +24,44 @@ export interface AnalyzeRequest {
 }
 
 export interface AnalyzeResponse {
-  region: string;
-  business_type: string;
-  score: number;
+  opportunity_score: number;
   explanation: string;
   risk_level: string;
-  roi: string;
-  metrics: {
-    population: { value: number; weight: number; description: string };
-    income: { value: number; weight: number; description: string };
-    competition: { value: number; weight: number; description: string };
-    flow: { value: number; weight: number; description: string };
-  };
+  estimated_roi: string;
+  recommendation: string;
+  metrics: Record<string, { value: string | number; label: string; description: string }>;
   similar_regions: Array<{
     name: string;
+    score?: number;
     similarity: number;
   }>;
+  business_markers?: Array<{
+    id: string;
+    name: string;
+    category: string;
+    lat: number;
+    lng: number;
+    competition: string;
+    potential: number;
+    icon: string;
+    color: string;
+  }>;
+  sources?: Array<{ name: string; url: string; status: 'ok' | 'partial' }>;
+  collected_at?: string;
 }
 
 export async function analyzeOpportunity(data: AnalyzeRequest): Promise<AnalyzeResponse> {
-  // Se tiver coordenadas, usa análise com IA (aceita qualquer endereço)
-  if (data.lat && data.lng) {
-    const response = await api.post('/api/analyze-with-ai', {
-      address: data.region,
-      business_type: data.business_type,
-      lat: data.lat,
-      lng: data.lng,
-      budget: data.budget,
-    });
-    return response.data;
+  if (data.lat === undefined || data.lng === undefined) {
+    throw new Error('Selecione um endereço da lista ou um ponto no mapa para usar coordenadas reais.');
   }
-  
-  // Senão, tenta análise clássica (apenas regiões pré-cadastradas)
-  const response = await api.post('/api/analyze', data);
+
+  const response = await api.post('/api/analyze-with-ai', {
+    address: data.region,
+    business_type: data.business_type,
+    lat: data.lat,
+    lng: data.lng,
+    budget: data.budget,
+  });
   return response.data;
 }
 
