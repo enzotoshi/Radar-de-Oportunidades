@@ -1,0 +1,113 @@
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠️  BACKEND NÃO ESTÁ RODANDO!                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+O ERRO QUE VOCÊ VIU:
+───────────────────────────────────────────────────────────────
+:8000/api/businesses:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+
+SIGNIFICA:
+→ O frontend está tentando conectar no backend
+→ Mas o backend NÃO está rodando na porta 8000
+→ Por isso "CONNECTION_REFUSED" (conexão recusada)
+
+═══════════════════════════════════════════════════════════════
+
+✅ SOLUÇÃO - INICIAR O BACKEND
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 1 - Automático (mais fácil):
+───────────────────────────────────────────────────────────────
+
+1. Feche o terminal do frontend (Ctrl+C)
+2. Vá para a pasta do projeto
+3. Duplo clique em: start.cmd
+4. Escolha opção: 3 (Iniciar AMBOS)
+
+PRONTO! Backend + Frontend iniciam juntos
+
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 2 - Manual (2 terminais separados):
+───────────────────────────────────────────────────────────────
+
+TERMINAL 1 - Backend:
+───────────────────────────────────────────────────────────────
+
+cd "C:\Users\25011991\Downloads\Radar-de-Oportunidades-main\Radar-de-Oportunidades-main\backend"
+python -m uvicorn main:app --reload --port 8000
+
+✅ Quando ver: "Uvicorn running on http://0.0.0.0:8000"
+→ Backend está rodando!
+
+───────────────────────────────────────────────────────────────
+
+TERMINAL 2 - Frontend (deixe rodando):
+───────────────────────────────────────────────────────────────
+
+cd "C:\Users\25011991\Downloads\Radar-de-Oportunidades-main\Radar-de-Oportunidades-main\frontend"
+npm run dev
+
+✅ Quando ver: "Local: http://localhost:3000"
+→ Frontend está rodando!
+
+═══════════════════════════════════════════════════════════════
+
+🔍 COMO SABER SE O BACKEND ESTÁ RODANDO?
+═══════════════════════════════════════════════════════════════
+
+Abra no navegador:
+→ http://localhost:8000
+
+Se ver uma página JSON com:
+{
+  "status": "online",
+  "service": "Radar de Oportunidades..."
+}
+
+✅ BACKEND ESTÁ RODANDO!
+
+═══════════════════════════════════════════════════════════════
+
+❌ SE O BACKEND NÃO INICIAR
+═══════════════════════════════════════════════════════════════
+
+Erro: "No module named uvicorn"
+→ Você não instalou as dependências do backend
+→ Execute:
+   cd backend
+   pip install -r requirements.txt
+
+Erro: "Port 8000 already in use"
+→ Backend já está rodando em outro terminal
+→ Feche o outro terminal
+
+═══════════════════════════════════════════════════════════════
+
+✨ RESUMO DO QUE FAZER AGORA
+═══════════════════════════════════════════════════════════════
+
+1. Feche o frontend (Ctrl+C no terminal)
+2. Execute: start.cmd
+3. Escolha: 3
+4. Aguarde ambos iniciarem
+5. Abra: http://localhost:3000
+6. Teste o autocomplete de endereços
+7. Clique em "Analisar" para chamar a IA!
+
+═══════════════════════════════════════════════════════════════
+
+💡 DICA
+═══════════════════════════════════════════════════════════════
+
+O frontend SEM backend:
+→ Autocomplete NÃO funciona
+→ Análise com IA NÃO funciona
+→ Só dados mockados (falsos)
+
+O frontend COM backend:
+→ Autocomplete FUNCIONA ✅
+→ Análise com IA FUNCIONA ✅
+→ Dados reais do IBGE ✅
+
+═══════════════════════════════════════════════════════════════
