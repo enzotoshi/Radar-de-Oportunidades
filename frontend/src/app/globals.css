@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +22,7 @@ body {
   padding: 0;
   background-color: var(--color-bg);
   color: #f1f5f9;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
   min-height: 100vh;
 }
 
@@ -43,7 +43,7 @@ body {
 }
 
 /* Range slider */
-input[type="range"] {
+input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
@@ -51,7 +51,7 @@ input[type="range"] {
   background: #334155;
   outline: none;
 }
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
@@ -61,7 +61,7 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
   box-shadow: 0 0 8px #73e2b488;
 }
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -72,7 +72,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* Google Maps overrides */
 .gm-style {
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .gm-style .gm-style-iw-c {
   background: #ffffff;
@@ -162,30 +162,30 @@ button:disabled:hover {
   outline: 2px solid #a1f1d0 !important;
   outline-offset: 4px;
 }
-input:not([type="range"]),
+input:not([type='range']),
 select {
   min-height: 46px;
 }
-input:not([type="range"]):focus,
+input:not([type='range']):focus,
 select:focus {
   box-shadow: 0 0 0 3px #73e2b41a;
   border-color: #73e2b4;
 }
-input[aria-invalid="true"] {
+input[aria-invalid='true'] {
   border-color: #f87171;
 }
-input[type="range"] {
+input[type='range'] {
   height: 6px;
   margin-block: 12px;
   accent-color: #73e2b4;
 }
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   border: 3px solid #142b25;
   width: 21px;
   height: 21px;
   box-shadow: 0 0 0 1px #73e2b4;
 }
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   border: 3px solid #142b25;
   width: 16px;
   height: 16px;
@@ -900,7 +900,7 @@ h1 em {
 .selection-card:hover {
   transform: translateY(-1px);
 }
-.selection-card[aria-pressed="true"] {
+.selection-card[aria-pressed='true'] {
   box-shadow: inset 3px 0 #73e2b4;
 }
 .app-footer {
@@ -1186,4 +1186,34 @@ h1 em {
 
 .field-control.pr-10 {
   padding-right: 2.5rem;
+}
+
+/* Shared identity: original transparent logo and a unified wordmark. */
+.brand-logo {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.brand-name {
+  max-width: 190px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -.35px;
+  text-wrap: balance;
+  color: #d4f3e8;
+  background: linear-gradient(115deg, #f3fbf8 10%, #9be9ce 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.app-footer { align-items: center; }
+.brand-footer .brand-logo { width: 44px; height: 44px; }
+.brand-footer .brand-name { max-width: 180px; font-size: 14px; }
+@media (max-width: 767px) {
+  .brand-logo { width: 48px; height: 48px; }
+  .brand-name { font-size: 16px; }
+  .app-footer { align-items: flex-start; }
 }

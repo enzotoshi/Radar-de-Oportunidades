@@ -1,15 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import radarLogo from '../../public/logo-radar.png'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
-import {
-  Radar,
-  Map,
-  LineChart,
-  Briefcase,
-  MapPin,
-  ArrowUpRight,
-} from 'lucide-react'
+import { Map, LineChart, Briefcase, MapPin, ArrowUpRight } from 'lucide-react'
 import { MapAnalysis } from '@/features/map-analysis'
 import { ScenarioSimulation } from '@/features/scenario-simulation'
 import { InvestorMode } from '@/features/investor-mode'
@@ -21,12 +16,29 @@ const tabs = [
   { id: 'gamification' as const, label: 'Modo investidor', icon: Briefcase },
 ]
 
+function BrandIdentity() {
+  return (
+    <>
+      <Image
+        className="brand-logo"
+        src={radarLogo}
+        alt=""
+        width={52}
+        height={52}
+      />
+      <span className="brand-name">
+        Radar de Oportunidades Inteligente
+      </span>
+    </>
+  )
+}
+
 export default function MainApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('map')
   const [selectedRegion, setSelectedRegion] = useState<string>('')
   const [selectedBusiness, setSelectedBusiness] = useState<string>('')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
+    null,
   )
 
   useEffect(() => {
@@ -44,14 +56,9 @@ export default function MainApp() {
             <button
               className="brand"
               onClick={() => setActiveTab('map')}
-              aria-label="Radar de Oportunidades — início"
+              aria-label="Radar de Oportunidades Inteligente — início"
             >
-              <span className="brand-symbol">
-                <Radar size={26} strokeWidth={1.6} />
-              </span>
-              <span className="brand-name">
-                radar<span>de oportunidades</span>
-              </span>
+              <BrandIdentity />
             </button>
             <nav className="app-nav" aria-label="Navegação principal">
               {tabs.map(({ id, label, icon: Icon }) => (
@@ -124,11 +131,14 @@ export default function MainApp() {
         </main>
 
         <footer className="app-footer">
-          <span className="flex items-center gap-2">
-            <Radar size={16} /> Radar de Oportunidades
+          <span
+            className="brand brand-footer"
+            aria-label="Radar de Oportunidades Inteligente"
+          >
+            <BrandIdentity />
           </span>
           <span>
-            Projeto educacional · Smart Cities · Dados e projeções sujeitos a
+            Projeto educacional · Smartcive · Dados e projeções sujeitos a
             estimativas
           </span>
           <span className="footer-signature">
