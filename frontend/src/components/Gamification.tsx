@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import {
+  Loader2,
+  Briefcase,
+  ArrowUpRight,
+  Target,
+  RotateCcw,
+  TrendingUp,
+} from 'lucide-react'
 import { REGIONS, BUSINESSES } from '@/lib/data'
 import { calculateGameScore } from '@/lib/api'
 import type { GameResult, Region, Business } from '@/types'
@@ -11,9 +18,26 @@ const TOTAL_BUDGET = 500000
 
 type Phase = 'intro' | 'playing' | 'result'
 
-const CONFETTI_COLORS = ['#00d4aa', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899']
+const CONFETTI_COLORS = [
+  '#00d4aa',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#3b82f6',
+  '#ec4899',
+]
 
-function ConfettiPiece({ color, left, delay, duration }: { color: string; left: number; delay: number; duration: number }) {
+function ConfettiPiece({
+  color,
+  left,
+  delay,
+  duration,
+}: {
+  color: string
+  left: number
+  delay: number
+  duration: number
+}) {
   return (
     <div
       className="confetti-piece fixed top-0 w-2 h-3 rounded-sm pointer-events-none z-50"
@@ -36,12 +60,24 @@ function Confetti() {
   }))
   return (
     <>
-      {pieces.map((p, i) => <ConfettiPiece key={i} {...p} />)}
+      {pieces.map((p, i) => (
+        <ConfettiPiece key={i} {...p} />
+      ))}
     </>
   )
 }
 
-function ScoreBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+function ScoreBar({
+  label,
+  value,
+  max,
+  color,
+}: {
+  label: string
+  value: number
+  max: number
+  color: string
+}) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
@@ -64,18 +100,29 @@ function ScoreBar({ label, value, max, color }: { label: string; value: number; 
 export default function Gamification() {
   const [phase, setPhase] = useState<Phase>('intro')
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null)
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null)
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(
+    null
+  )
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const confettiShownRef = useRef(false)
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+  }, [phase])
 
   const budgetUsed = selectedBusiness?.min_investment ?? 0
   const budgetRemaining = TOTAL_BUDGET - budgetUsed
   const budgetPct = Math.min(100, (budgetUsed / TOTAL_BUDGET) * 100)
 
   useEffect(() => {
-    if (phase === 'result' && gameResult && !confettiShownRef.current && (gameResult.total_score >= 500)) {
+    if (
+      phase === 'result' &&
+      gameResult &&
+      !confettiShownRef.current &&
+      gameResult.total_score >= 500
+    ) {
       confettiShownRef.current = true
       setShowConfetti(true)
       const t = setTimeout(() => setShowConfetti(false), 3500)
@@ -97,27 +144,39 @@ export default function Gamification() {
     } catch {
       // Fallback local calculation
       const baseScore = Math.round(
-        ((10 - selectedRegion.competition_density) * 10 * 0.25) +
-        (Math.min(100, (selectedRegion.avg_income / selectedBusiness.ideal_income) * 65) * 0.20) +
-        (selectedRegion.consumption_trend * 10 * 0.15) +
-        (selectedRegion.urban_flow * 10 * 0.10) + 60 * 0.30
+        (10 - selectedRegion.competition_density) * 10 * 0.25 +
+          Math.min(
+            100,
+            (selectedRegion.avg_income / selectedBusiness.ideal_income) * 65
+          ) *
+            0.2 +
+          selectedRegion.consumption_trend * 10 * 0.15 +
+          selectedRegion.urban_flow * 10 * 0.1 +
+          60 * 0.3
       )
       const sp = Math.min(400, baseScore * 4)
-      const rm = selectedBusiness.min_investment <= TOTAL_BUDGET * 0.8 ? 300 : 150
+      const rm =
+        selectedBusiness.min_investment <= TOTAL_BUDGET * 0.8 ? 300 : 150
       const mt = Math.min(300, selectedRegion.consumption_trend * 30)
       const total = sp + rm + mt
-      const cls = total >= 750 ? 'Guru dos Negócios' : total >= 500 ? 'Estrategista' : 'Investidor Novato'
+      const cls =
+        total >= 750
+          ? 'Guru dos Negócios'
+          : total >= 500
+            ? 'Estrategista'
+            : 'Investidor Novato'
       setGameResult({
         total_score: total,
         success_potential: sp,
         risk_management: rm,
         market_timing: mt,
         classification: cls,
-        feedback: total >= 750
-          ? 'Escolha brilhante! Visão estratégica excepcional.'
-          : total >= 500
-            ? 'Boa jogada! Análise sólida com equilíbrio entre risco e retorno.'
-            : 'É um começo! Esta escolha apresenta desafios. Estude mais o perfil das regiões.',
+        feedback:
+          total >= 750
+            ? 'Escolha brilhante! Visão estratégica excepcional.'
+            : total >= 500
+              ? 'Boa jogada! Análise sólida com equilíbrio entre risco e retorno.'
+              : 'É um começo! Esta escolha apresenta desafios. Estude mais o perfil das regiões.',
         tips: [
           'Analise sempre a relação renda média vs. investimento mínimo',
           'Bairros com tendência > 8 tendem a ter melhor performance',
@@ -140,12 +199,12 @@ export default function Gamification() {
 
   const classificationEmoji: Record<string, string> = {
     'Guru dos Negócios': '🏆',
-    'Estrategista': '🎯',
+    Estrategista: '🎯',
     'Investidor Novato': '📖',
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="page-container investor-page">
       {showConfetti && <Confetti />}
 
       <AnimatePresence mode="wait">
@@ -156,39 +215,85 @@ export default function Gamification() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="flex items-center justify-center min-h-[60vh]"
+            className="investor-intro"
           >
-            <div className="bg-surface-card rounded-3xl p-8 border border-slate-700 max-w-md w-full text-center space-y-6 shadow-2xl">
-              <div className="text-6xl">🎮</div>
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-2">Modo Investidor</h1>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Você recebeu um capital de investimento. Tome as melhores decisões para maximizar o retorno!
+            <>
+              <div className="investor-story page-heading">
+                <span className="eyebrow">
+                  <Briefcase size={15} /> MODO INVESTIDOR
+                </span>
+                <h1>
+                  Grandes decisões <br />
+                  começam com <br />
+                  <em>um novo olhar.</em>
+                </h1>
+                <p>
+                  Treine sua visão de negócio em um desafio de investimento.
+                  Explore regiões, encontre afinidades e descubra o impacto das
+                  suas escolhas.
                 </p>
+                <div className="investor-pillars">
+                  <span>
+                    <Target size={20} /> Potencial de sucesso
+                  </span>
+                  <span>
+                    <Briefcase size={20} /> Gestão de risco
+                  </span>
+                  <span>
+                    <TrendingUp size={20} /> Timing de mercado
+                  </span>
+                </div>
+                <span className="subtle-badge">
+                  Experiência educacional · Capital virtual
+                </span>
               </div>
+              <div className="panel investor-capital space-y-6">
+                <span className="icon-tile large">
+                  <Briefcase size={28} strokeWidth={1.5} />
+                </span>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    Sua próxima decisão começa aqui.
+                  </h2>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Um orçamento, uma região e uma ideia. Qual combinação você
+                    escolheria?
+                  </p>
+                </div>
 
-              <div className="bg-gradient-to-br from-accent/20 to-primary-700/20 rounded-2xl p-5 border border-accent/30">
-                <p className="text-xs text-slate-400 mb-1">Seu orçamento</p>
-                <p className="text-4xl font-black text-accent">R$ 500.000</p>
-                <p className="text-xs text-slate-500 mt-1">Escolha região + negócio estrategicamente</p>
+                <div className="bg-gradient-to-br from-accent/20 to-primary-700/20 rounded-2xl p-5 border border-accent/30">
+                  <p className="text-xs text-slate-400 mb-1">
+                    Capital virtual disponível
+                  </p>
+                  <p className="text-4xl font-black text-accent">R$ 500.000</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Escolha região + negócio estrategicamente
+                  </p>
+                </div>
+
+                <div className="space-y-2 text-sm text-slate-400 text-left">
+                  {[
+                    'Analise o perfil de cada região',
+                    'Escolha o negócio mais compatível',
+                    'Receba pontuação e dicas para evoluir',
+                  ].map((tip, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent text-xs flex items-center justify-center font-bold flex-shrink-0">
+                        {i + 1}
+                      </span>
+                      <span>{tip}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setPhase('playing')}
+                  className="primary-button w-full"
+                >
+                  Começar desafio <ArrowUpRight size={18} />
+                </button>
               </div>
-
-              <div className="space-y-2 text-sm text-slate-400 text-left">
-                {['Analise o perfil de cada região', 'Escolha o negócio mais compatível', 'Receba pontuação e feedback de especialista'].map((tip, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-accent/20 text-accent text-xs flex items-center justify-center font-bold flex-shrink-0">{i + 1}</span>
-                    <span>{tip}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setPhase('playing')}
-                className="w-full py-3.5 bg-accent hover:bg-accent-600 text-surface font-bold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg text-base"
-              >
-                🚀 Começar
-              </button>
-            </div>
+            </>
           </motion.div>
         )}
 
@@ -202,15 +307,21 @@ export default function Gamification() {
             className="space-y-5"
           >
             <div>
-              <h1 className="text-xl font-bold text-white mb-1">🎮 Modo Investidor</h1>
-              <p className="text-slate-400 text-sm">Escolha onde e o que investir para maximizar o retorno.</p>
+              <h1 className="text-xl font-bold text-white mb-1">
+                Monte sua estratégia
+              </h1>
+              <p className="text-slate-400 text-sm">
+                Escolha onde e o que investir para maximizar o retorno.
+              </p>
             </div>
 
             {/* Budget bar */}
-            <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-2">
+            <div className="panel space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Orçamento disponível</span>
-                <span className={`font-bold ${budgetRemaining < 0 ? 'text-red-400' : 'text-accent'}`}>
+                <span
+                  className={`font-bold ${budgetRemaining < 0 ? 'text-red-400' : 'text-accent'}`}
+                >
                   R$ {budgetRemaining.toLocaleString('pt-BR')}
                 </span>
               </div>
@@ -221,20 +332,24 @@ export default function Gamification() {
                 />
               </div>
               <p className="text-xs text-slate-500">
-                Total: R$ {TOTAL_BUDGET.toLocaleString('pt-BR')} · Comprometido: R$ {budgetUsed.toLocaleString('pt-BR')}
+                Total: R$ {TOTAL_BUDGET.toLocaleString('pt-BR')} · Comprometido:
+                R$ {budgetUsed.toLocaleString('pt-BR')}
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {/* Region selection */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-300">🏙️ Escolha a Região</h3>
-                <div className="grid grid-cols-1 gap-2 max-h-[380px] overflow-y-auto pr-1">
+                <h3 className="text-sm font-semibold text-slate-300">
+                  01 · Escolha a região
+                </h3>
+                <div className="grid grid-cols-1 gap-2 max-h-[480px] overflow-y-auto pr-1">
                   {REGIONS.map((r) => (
                     <button
                       key={r.id}
+                      aria-pressed={selectedRegion?.id === r.id}
                       onClick={() => setSelectedRegion(r)}
-                      className={`text-left p-3 rounded-xl border transition-all duration-150 ${
+                      className={`selection-card text-left p-4 rounded-xl border transition-all duration-150 ${
                         selectedRegion?.id === r.id
                           ? 'border-accent bg-accent/10 shadow-md'
                           : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-surface-elevated'
@@ -242,12 +357,18 @@ export default function Gamification() {
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-white truncate">{r.name}</p>
-                          <p className="text-xs text-slate-500 truncate">{r.highlights[0]}</p>
+                          <p className="font-semibold text-sm text-white truncate">
+                            {r.name}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {r.highlights[0]}
+                          </p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-slate-400">Renda</p>
-                          <p className="text-xs font-bold text-accent">R$ {(r.avg_income / 1000).toFixed(0)}k</p>
+                          <p className="text-xs font-bold text-accent">
+                            R$ {(r.avg_income / 1000).toFixed(0)}k
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 mt-2 text-xs text-slate-500">
@@ -261,13 +382,16 @@ export default function Gamification() {
 
               {/* Business selection */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-300">💼 Escolha o Negócio</h3>
-                <div className="grid grid-cols-1 gap-2 max-h-[380px] overflow-y-auto pr-1">
+                <h3 className="text-sm font-semibold text-slate-300">
+                  02 · Escolha o negócio
+                </h3>
+                <div className="grid grid-cols-1 gap-2 max-h-[480px] overflow-y-auto pr-1">
                   {BUSINESSES.map((b) => (
                     <button
                       key={b.id}
+                      aria-pressed={selectedBusiness?.id === b.id}
                       onClick={() => setSelectedBusiness(b)}
-                      className={`text-left p-3 rounded-xl border transition-all duration-150 ${
+                      className={`selection-card text-left p-4 rounded-xl border transition-all duration-150 ${
                         selectedBusiness?.id === b.id
                           ? 'border-accent bg-accent/10 shadow-md'
                           : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-surface-elevated'
@@ -276,12 +400,16 @@ export default function Gamification() {
                       <div className="flex items-center gap-2">
                         <span className="text-xl">{b.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-white truncate">{b.name}</p>
+                          <p className="font-semibold text-sm text-white truncate">
+                            {b.name}
+                          </p>
                           <p className="text-xs text-slate-500">{b.sector}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-slate-400">Mín.</p>
-                          <p className={`text-xs font-bold ${b.min_investment > TOTAL_BUDGET ? 'text-red-400' : 'text-accent'}`}>
+                          <p
+                            className={`text-xs font-bold ${b.min_investment > TOTAL_BUDGET ? 'text-red-400' : 'text-accent'}`}
+                          >
                             R$ {(b.min_investment / 1000).toFixed(0)}k
                           </p>
                         </div>
@@ -295,9 +423,17 @@ export default function Gamification() {
             <button
               onClick={handleInvest}
               disabled={!selectedRegion || !selectedBusiness || loading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-accent hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-surface font-bold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              className="primary-button w-full"
             >
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Avaliando...</> : '💰 Fazer Investimento'}
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Avaliando...
+                </>
+              ) : (
+                <>
+                  <Briefcase size={17} /> Avaliar meu investimento
+                </>
+              )}
             </button>
           </motion.div>
         )}
@@ -312,16 +448,23 @@ export default function Gamification() {
             className="max-w-lg mx-auto space-y-5"
           >
             <div className="text-center">
-              <p className="text-5xl mb-2">{classificationEmoji[gameResult.classification] ?? '🎯'}</p>
-              <h1 className="text-2xl font-black text-white">{gameResult.classification}</h1>
+              <p className="text-5xl mb-2">
+                {classificationEmoji[gameResult.classification] ?? '🎯'}
+              </p>
+              <h1 className="text-2xl font-black text-white">
+                {gameResult.classification}
+              </h1>
               <p className="text-slate-400 text-sm mt-1">
-                {selectedRegion?.name} · {selectedBusiness?.icon} {selectedBusiness?.name}
+                {selectedRegion?.name} · {selectedBusiness?.icon}{' '}
+                {selectedBusiness?.name}
               </p>
             </div>
 
             {/* Total score */}
             <div className="bg-gradient-to-br from-accent/20 to-primary-700/20 rounded-2xl p-6 border border-accent/30 text-center">
-              <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Pontuação Final</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+                Pontuação Final
+              </p>
               <motion.p
                 className="text-6xl font-black text-accent"
                 initial={{ scale: 0.5, opacity: 0 }}
@@ -334,23 +477,46 @@ export default function Gamification() {
             </div>
 
             {/* Breakdown */}
-            <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-3">
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Detalhamento</h3>
-              <ScoreBar label="🎯 Potencial de Sucesso" value={gameResult.success_potential} max={400} color="#00d4aa" />
-              <ScoreBar label="🛡️ Gestão de Risco" value={gameResult.risk_management} max={300} color="#f59e0b" />
-              <ScoreBar label="⏱️ Timing de Mercado" value={gameResult.market_timing} max={300} color="#8b5cf6" />
+            <div className="panel space-y-3">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Detalhamento
+              </h3>
+              <ScoreBar
+                label="🎯 Potencial de Sucesso"
+                value={gameResult.success_potential}
+                max={400}
+                color="#00d4aa"
+              />
+              <ScoreBar
+                label="🛡️ Gestão de Risco"
+                value={gameResult.risk_management}
+                max={300}
+                color="#f59e0b"
+              />
+              <ScoreBar
+                label="⏱️ Timing de Mercado"
+                value={gameResult.market_timing}
+                max={300}
+                color="#8b5cf6"
+              />
             </div>
 
             {/* Feedback */}
-            <div className="bg-surface-card rounded-2xl p-4 border border-slate-700">
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Feedback do Especialista</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">{gameResult.feedback}</p>
+            <div className="panel">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Feedback do Especialista
+              </h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {gameResult.feedback}
+              </p>
             </div>
 
             {/* Tips */}
             {gameResult.tips.length > 0 && (
-              <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-2">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">💡 Dicas para Melhorar</h3>
+              <div className="panel space-y-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  💡 Dicas para Melhorar
+                </h3>
                 {gameResult.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-accent text-xs mt-0.5">→</span>
@@ -360,11 +526,8 @@ export default function Gamification() {
               </div>
             )}
 
-            <button
-              onClick={handleReset}
-              className="w-full py-3 bg-surface-elevated hover:bg-slate-600 text-white font-semibold rounded-xl border border-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              🔄 Jogar Novamente
+            <button onClick={handleReset} className="secondary-button w-full">
+              <RotateCcw size={17} /> Experimentar outra estratégia
             </button>
           </motion.div>
         )}

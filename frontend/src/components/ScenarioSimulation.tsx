@@ -3,9 +3,25 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
-import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import {
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  SlidersHorizontal,
+  LineChart as ChartIcon,
+  ArrowUpRight,
+  Sparkles,
+} from 'lucide-react'
 import { REGIONS, BUSINESSES } from '@/lib/data'
 import { simulateScenario } from '@/lib/api'
 import type { SimulationResult, YearProjection } from '@/types'
@@ -27,12 +43,20 @@ function generateLocalSimulation(
   const business = BUSINESSES.find((b) => b.id === businessId)
 
   const baseScore = Math.round(
-    ((10 - (region?.competition_density ?? 6)) * 10 * 0.25) +
-    (Math.min(100, ((region?.avg_income ?? 5000) / (business?.ideal_income ?? 5000)) * 65) * 0.20) +
-    ((region?.consumption_trend ?? 7) * 10 * 0.15) +
-    ((region?.urban_flow ?? 7) * 10 * 0.10) +
-    (Math.min(100, (budget / Math.max(business?.min_investment ?? 100000, 1)) * 65) * 0.10) +
-    (60 * 0.20)
+    (10 - (region?.competition_density ?? 6)) * 10 * 0.25 +
+      Math.min(
+        100,
+        ((region?.avg_income ?? 5000) / (business?.ideal_income ?? 5000)) * 65
+      ) *
+        0.2 +
+      (region?.consumption_trend ?? 7) * 10 * 0.15 +
+      (region?.urban_flow ?? 7) * 10 * 0.1 +
+      Math.min(
+        100,
+        (budget / Math.max(business?.min_investment ?? 100000, 1)) * 65
+      ) *
+        0.1 +
+      60 * 0.2
   )
 
   const projections: YearProjection[] = []
@@ -41,26 +65,54 @@ function generateLocalSimulation(
     const popBonus = popGrowth * factor * 0.3
     const incomeBonus = incomeGrowth * factor * 0.25
     const competitorPenalty = newCompetitors * factor * 1.5
-    const projected = Math.max(5, Math.min(99, baseScore + popBonus + incomeBonus - competitorPenalty))
-    projections.push({ year: 2024 + i, score: Math.round(projected * 10) / 10, label: String(2024 + i) })
+    const projected = Math.max(
+      5,
+      Math.min(99, baseScore + popBonus + incomeBonus - competitorPenalty)
+    )
+    projections.push({
+      year: 2024 + i,
+      score: Math.round(projected * 10) / 10,
+      label: String(2024 + i),
+    })
   }
 
   const projectedScore = projections[4].score
   const delta = Math.round((projectedScore - baseScore) * 10) / 10
 
   let explanation = ''
-  if (delta > 10) explanation = `Cenário otimista: o score deve subir ${delta.toFixed(1)} pontos em 5 anos.`
-  else if (delta > 0) explanation = `Cenário levemente positivo: melhora gradual de ${delta.toFixed(1)} pontos.`
-  else if (delta > -10) explanation = `Cenário estável com leve retração de ${Math.abs(delta).toFixed(1)} pontos.`
-  else explanation = `Cenário de alerta: queda de ${Math.abs(delta).toFixed(1)} pontos. Reavalie a estratégia.`
+  if (delta > 10)
+    explanation = `Cenário otimista: o score deve subir ${delta.toFixed(1)} pontos em 5 anos.`
+  else if (delta > 0)
+    explanation = `Cenário levemente positivo: melhora gradual de ${delta.toFixed(1)} pontos.`
+  else if (delta > -10)
+    explanation = `Cenário estável com leve retração de ${Math.abs(delta).toFixed(1)} pontos.`
+  else
+    explanation = `Cenário de alerta: queda de ${Math.abs(delta).toFixed(1)} pontos. Reavalie a estratégia.`
 
   const keyFactors: string[] = []
-  if (popGrowth > 10) keyFactors.push(`Crescimento populacional +${popGrowth.toFixed(0)}% amplia o público`)
-  if (incomeGrowth > 15) keyFactors.push(`Aumento de renda +${incomeGrowth.toFixed(0)}% eleva o poder de compra`)
-  if (newCompetitors > 5) keyFactors.push(`${newCompetitors} novos concorrentes pressionam as margens`)
-  if (keyFactors.length === 0) keyFactors.push('Parâmetros moderados resultam em estabilidade')
+  if (popGrowth > 10)
+    keyFactors.push(
+      `Crescimento populacional +${popGrowth.toFixed(0)}% amplia o público`
+    )
+  if (incomeGrowth > 15)
+    keyFactors.push(
+      `Aumento de renda +${incomeGrowth.toFixed(0)}% eleva o poder de compra`
+    )
+  if (newCompetitors > 5)
+    keyFactors.push(
+      `${newCompetitors} novos concorrentes pressionam as margens`
+    )
+  if (keyFactors.length === 0)
+    keyFactors.push('Parâmetros moderados resultam em estabilidade')
 
-  return { original_score: baseScore, projected_score: projectedScore, delta, projections, explanation, key_factors: keyFactors }
+  return {
+    original_score: baseScore,
+    projected_score: projectedScore,
+    delta,
+    projections,
+    explanation,
+    key_factors: keyFactors,
+  }
 }
 
 interface SliderRowProps {
@@ -73,7 +125,15 @@ interface SliderRowProps {
   onChange: (v: number) => void
 }
 
-function SliderRow({ label, value, min, max, step, format, onChange }: SliderRowProps) {
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  format,
+  onChange,
+}: SliderRowProps) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
@@ -90,7 +150,7 @@ function SliderRow({ label, value, min, max, step, format, onChange }: SliderRow
         className="w-full"
         aria-label={label}
       />
-      <div className="flex justify-between text-xs text-slate-600">
+      <div className="flex justify-between text-xs text-slate-400">
         <span>{format(min)}</span>
         <span>{format(max)}</span>
       </div>
@@ -98,19 +158,32 @@ function SliderRow({ label, value, min, max, step, format, onChange }: SliderRow
   )
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: { value: number }[]
+  label?: string
+}) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-surface-card border border-slate-700 rounded-lg px-3 py-2 text-xs">
         <p className="text-slate-400">{label}</p>
-        <p className="font-bold text-accent">{payload[0].value.toFixed(1)} pts</p>
+        <p className="font-bold text-accent">
+          {payload[0].value.toFixed(1)} pts
+        </p>
       </div>
     )
   }
   return null
 }
 
-export default function ScenarioSimulation({ initialRegion = '', initialBusiness = '' }: Props) {
+export default function ScenarioSimulation({
+  initialRegion = '',
+  initialBusiness = '',
+}: Props) {
   const [region, setRegion] = useState(initialRegion || 'pinheiros')
   const [business, setBusiness] = useState(initialBusiness || 'cafeteria')
   const [budget, setBudget] = useState(150000)
@@ -123,82 +196,179 @@ export default function ScenarioSimulation({ initialRegion = '', initialBusiness
   const handleSimulate = async () => {
     setLoading(true)
     try {
-      const res = await simulateScenario({ region, business_type: business, budget, population_growth: popGrowth, income_growth: incomeGrowth, new_competitors: newCompetitors })
+      const res = await simulateScenario({
+        region,
+        business_type: business,
+        budget,
+        population_growth: popGrowth,
+        income_growth: incomeGrowth,
+        new_competitors: newCompetitors,
+      })
       setResult(res)
     } catch {
-      const res = generateLocalSimulation(region, business, budget, popGrowth, incomeGrowth, newCompetitors)
+      const res = generateLocalSimulation(
+        region,
+        business,
+        budget,
+        popGrowth,
+        incomeGrowth,
+        newCompetitors
+      )
       setResult(res)
     } finally {
       setLoading(false)
     }
   }
 
-  const deltaColor = !result ? '' : result.delta > 5 ? 'text-accent' : result.delta < -5 ? 'text-red-400' : 'text-warning'
-  const DeltaIcon = !result ? Minus : result.delta > 5 ? TrendingUp : result.delta < -5 ? TrendingDown : Minus
+  const deltaColor = !result
+    ? ''
+    : result.delta > 5
+      ? 'text-accent'
+      : result.delta < -5
+        ? 'text-red-400'
+        : 'text-warning'
+  const DeltaIcon = !result
+    ? Minus
+    : result.delta > 5
+      ? TrendingUp
+      : result.delta < -5
+        ? TrendingDown
+        : Minus
 
   const chartData = result
-    ? [
-        { label: '2024', score: result.original_score },
-        ...result.projections,
-      ]
+    ? [{ label: '2024', score: result.original_score }, ...result.projections]
     : []
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="text-2xl font-bold text-white mb-1">📊 Simulação de Cenários Futuros</h1>
-        <p className="text-slate-400 text-sm">
-          Ajuste os parâmetros e projete o score de oportunidade para os próximos 5 anos.
+    <div className="page-container simulation-page space-y-6">
+      <motion.div
+        className="page-heading"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <span className="eyebrow">
+          <ChartIcon size={15} /> LABORATÓRIO DE POSSIBILIDADES
+        </span>
+        <h1>
+          Antecipe cenários.
+          <br />
+          <em>Amplie sua perspectiva.</em>
+        </h1>
+        <p>
+          Como o seu negócio pode evoluir? Ajuste as variáveis e compare o
+          potencial ao longo de cinco anos.
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="simulation-grid">
         {/* Controls */}
         <div className="space-y-4">
           {/* Region & Business selectors */}
-          <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-300">Configuração Base</h3>
+          <div className="panel space-y-3">
+            <div className="panel-heading">
+              <span className="icon-tile">
+                <SlidersHorizontal size={18} />
+              </span>
+              <div>
+                <h3>Ponto de partida</h3>
+                <p>Defina o contexto do seu negócio.</p>
+              </div>
+            </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Região</label>
+              <label htmlFor="simulation-region" className="field-label">
+                Região
+              </label>
               <select
+                id="simulation-region"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 className="w-full bg-surface border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
               >
-                {REGIONS.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {REGIONS.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Tipo de Negócio</label>
+              <label htmlFor="simulation-business" className="field-label">
+                Tipo de negócio
+              </label>
               <select
+                id="simulation-business"
                 value={business}
                 onChange={(e) => setBusiness(e.target.value)}
                 className="w-full bg-surface border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
               >
-                {BUSINESSES.map((b) => <option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}
+                {BUSINESSES.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.icon} {b.name}
+                  </option>
+                ))}
               </select>
             </div>
-            <SliderRow label="💰 Orçamento (R$)" value={budget} min={20000} max={1000000} step={10000}
-              format={(v) => `R$ ${v.toLocaleString('pt-BR')}`} onChange={setBudget} />
+            <SliderRow
+              label="Orçamento disponível"
+              value={budget}
+              min={20000}
+              max={1000000}
+              step={10000}
+              format={(v) => `R$ ${v.toLocaleString('pt-BR')}`}
+              onChange={setBudget}
+            />
           </div>
 
           {/* Scenario sliders */}
-          <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-5">
-            <h3 className="text-sm font-semibold text-slate-300">Variáveis do Cenário</h3>
-            <SliderRow label="📈 Crescimento Populacional (%)" value={popGrowth} min={-20} max={50} step={1}
-              format={(v) => `${v > 0 ? '+' : ''}${v}%`} onChange={setPopGrowth} />
-            <SliderRow label="💵 Aumento de Renda Média (%)" value={incomeGrowth} min={-30} max={80} step={1}
-              format={(v) => `${v > 0 ? '+' : ''}${v}%`} onChange={setIncomeGrowth} />
-            <SliderRow label="🏪 Novos Concorrentes" value={newCompetitors} min={0} max={20} step={1}
-              format={(v) => `${v} novos`} onChange={setNewCompetitors} />
+          <div className="panel space-y-5">
+            <h3 className="text-sm font-semibold text-slate-300">
+              Variáveis do Cenário
+            </h3>
+            <SliderRow
+              label="Crescimento populacional"
+              value={popGrowth}
+              min={-20}
+              max={50}
+              step={1}
+              format={(v) => `${v > 0 ? '+' : ''}${v}%`}
+              onChange={setPopGrowth}
+            />
+            <SliderRow
+              label="Variação da renda média"
+              value={incomeGrowth}
+              min={-30}
+              max={80}
+              step={1}
+              format={(v) => `${v > 0 ? '+' : ''}${v}%`}
+              onChange={setIncomeGrowth}
+            />
+            <SliderRow
+              label="Novos concorrentes"
+              value={newCompetitors}
+              min={0}
+              max={20}
+              step={1}
+              format={(v) => `${v} novos`}
+              onChange={setNewCompetitors}
+            />
           </div>
 
           <button
             onClick={handleSimulate}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-accent hover:bg-accent-600 disabled:opacity-50 text-surface font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            className="primary-button w-full"
           >
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Calculando...</> : '🔮 Recalcular Oportunidades'}
+            {loading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Calculando...
+              </>
+            ) : (
+              <>
+                <Sparkles size={17} /> Simular oportunidades{' '}
+                <ArrowUpRight size={17} />
+              </>
+            )}
           </button>
         </div>
 
@@ -207,47 +377,84 @@ export default function ScenarioSimulation({ initialRegion = '', initialBusiness
           {result ? (
             <>
               {/* Score comparison */}
-              <div className="bg-surface-card rounded-2xl p-4 border border-slate-700">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Comparativo de Score</h3>
+              <div className="panel">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  Comparativo de Score
+                </h3>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Score Atual</p>
-                    <p className="text-2xl font-bold text-white">{result.original_score.toFixed(0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Variação</p>
-                    <p className={`text-2xl font-bold flex items-center justify-center gap-1 ${deltaColor}`}>
-                      <DeltaIcon size={18} />
-                      {result.delta > 0 ? '+' : ''}{result.delta.toFixed(1)}
+                    <p className="text-2xl font-bold text-white">
+                      {result.original_score.toFixed(0)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Projetado (5a)</p>
-                    <p className="text-2xl font-bold text-accent">{result.projected_score.toFixed(0)}</p>
+                    <p className="text-xs text-slate-500 mb-1">Variação</p>
+                    <p
+                      className={`text-2xl font-bold flex items-center justify-center gap-1 ${deltaColor}`}
+                    >
+                      <DeltaIcon size={18} />
+                      {result.delta > 0 ? '+' : ''}
+                      {result.delta.toFixed(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">
+                      Projetado (5a)
+                    </p>
+                    <p className="text-2xl font-bold text-accent">
+                      {result.projected_score.toFixed(0)}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Chart */}
-              <div className="bg-surface-card rounded-2xl p-4 border border-slate-700">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Evolução do Score (5 anos)</h3>
-                <ResponsiveContainer width="100%" height={200}>
+              <div className="panel">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  Evolução do Score (5 anos)
+                </h3>
+                <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#263541" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: '#a0afbd', fontSize: 11 }}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: '#a0afbd', fontSize: 11 }}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine y={70} stroke="#00d4aa" strokeDasharray="4 4" strokeOpacity={0.4} />
-                    <ReferenceLine y={40} stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity={0.4} />
-                    <Line type="monotone" dataKey="score" stroke="#00d4aa" strokeWidth={2.5}
-                      dot={{ fill: '#00d4aa', r: 4 }} activeDot={{ r: 6, fill: '#00d4aa' }} />
+                    <ReferenceLine
+                      y={70}
+                      stroke="#73e2b4"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.4}
+                    />
+                    <ReferenceLine
+                      y={40}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.4}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#73e2b4"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#73e2b4', r: 4 }}
+                      activeDot={{ r: 6, fill: '#73e2b4' }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Explanation */}
-              <div className="bg-surface-card rounded-2xl p-4 border border-slate-700 space-y-3">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Análise do Cenário</h3>
+              <div className="panel space-y-3">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Análise do Cenário
+                </h3>
                 <p className="text-sm text-slate-300">{result.explanation}</p>
                 <div className="space-y-1.5">
                   {result.key_factors.map((factor, i) => (
@@ -260,11 +467,33 @@ export default function ScenarioSimulation({ initialRegion = '', initialBusiness
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-64 bg-surface-card rounded-2xl border border-slate-700 border-dashed">
-              <div className="text-center text-slate-500 space-y-2">
-                <p className="text-4xl">📊</p>
-                <p className="text-sm">Configure os parâmetros e clique em<br />&quot;Recalcular Oportunidades&quot;</p>
+            <div className="simulation-empty panel">
+              <span className="icon-tile large">
+                <ChartIcon size={30} strokeWidth={1.5} />
+              </span>
+              <span className="eyebrow">DO PRESENTE ÀS POSSIBILIDADES</span>
+              <h2>O futuro tem mais de um caminho.</h2>
+              <p>
+                Configure seu cenário e selecione{' '}
+                <strong>Simular oportunidades</strong> para descobrir como as
+                suas escolhas influenciam o score.
+              </p>
+              <div className="empty-chart" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
               </div>
+              <div className="empty-chart-caption">
+                <span>Ponto de partida</span>
+                <span>Horizonte de 5 anos</span>
+              </div>
+              <span className="field-help">
+                Ilustração · Sua projeção será exibida após a simulação.
+              </span>
             </div>
           )}
         </div>

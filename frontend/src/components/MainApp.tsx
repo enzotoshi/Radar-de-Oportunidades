@@ -1,123 +1,141 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
+import {
+  Radar,
+  Map,
+  LineChart,
+  Briefcase,
+  MapPin,
+  ArrowUpRight,
+} from 'lucide-react'
 import { MapAnalysis } from '@/features/map-analysis'
 import { ScenarioSimulation } from '@/features/scenario-simulation'
 import { InvestorMode } from '@/features/investor-mode'
 import type { ActiveTab, AnalysisResult } from '@/types'
 
-const tabs: { id: ActiveTab; label: string; icon: string }[] = [
-  { id: 'map', label: 'Análise de Mapa', icon: '🗺️' },
-  { id: 'simulation', label: 'Simulação de Cenários', icon: '📊' },
-  { id: 'gamification', label: 'Modo Investidor', icon: '🎮' },
+const tabs = [
+  { id: 'map' as const, label: 'Explorar mapa', icon: Map },
+  { id: 'simulation' as const, label: 'Simular cenários', icon: LineChart },
+  { id: 'gamification' as const, label: 'Modo investidor', icon: Briefcase },
 ]
 
 export default function MainApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('map')
   const [selectedRegion, setSelectedRegion] = useState<string>('')
   const [selectedBusiness, setSelectedBusiness] = useState<string>('')
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null
+  )
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+  }, [activeTab])
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
-      {/* ── Header / Navbar ── */}
-      <header className="bg-surface-card border-b border-slate-700 sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 py-3">
-            {/* Logo */}
-            <div className="flex items-center gap-3 mr-auto">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary-400 flex items-center justify-center text-xl shadow-lg">
-                🎯
-              </div>
-              <div>
-                <h1 className="font-bold text-lg text-white leading-tight">
-                  Radar de Oportunidades
-                </h1>
-                <p className="text-xs text-slate-400 leading-none">Smart Cities · São Paulo</p>
-              </div>
-            </div>
-
-            {/* Nav tabs */}
-            <nav className="flex gap-1 bg-surface rounded-xl p-1 w-full sm:w-auto">
-              {tabs.map((tab) => (
+    <MotionConfig reducedMotion="user">
+      <div className="app-shell">
+        <a href="#conteudo" className="skip-link">
+          Pular para o conteúdo
+        </a>
+        <header className="app-header">
+          <div className="header-inner">
+            <button
+              className="brand"
+              onClick={() => setActiveTab('map')}
+              aria-label="Radar de Oportunidades — início"
+            >
+              <span className="brand-symbol">
+                <Radar size={26} strokeWidth={1.6} />
+              </span>
+              <span className="brand-name">
+                radar<span>de oportunidades</span>
+              </span>
+            </button>
+            <nav className="app-nav" aria-label="Navegação principal">
+              {tabs.map(({ id, label, icon: Icon }) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-accent text-surface shadow-md'
-                      : 'text-slate-400 hover:text-white hover:bg-surface-elevated'
-                  }`}
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  aria-current={activeTab === id ? 'page' : undefined}
+                  className={`nav-item ${activeTab === id ? 'is-active' : ''}`}
                 >
-                  <span>{tab.icon}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{label}</span>
                 </button>
               ))}
             </nav>
+            <span className="header-location">
+              <MapPin size={14} /> São Paulo & região
+            </span>
           </div>
-        </div>
-      </header>
+        </header>
+        <main id="conteudo" className="flex-1" tabIndex={-1}>
+          <AnimatePresence mode="wait">
+            {activeTab === 'map' && (
+              <motion.div
+                key="map"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="h-full"
+              >
+                <MapAnalysis
+                  selectedRegion={selectedRegion}
+                  setSelectedRegion={setSelectedRegion}
+                  selectedBusiness={selectedBusiness}
+                  setSelectedBusiness={setSelectedBusiness}
+                  analysisResult={analysisResult}
+                  setAnalysisResult={setAnalysisResult}
+                  onGoToInvestor={() => setActiveTab('gamification')}
+                />
+              </motion.div>
+            )}
 
-      {/* ── Main Content ── */}
-      <main className="flex-1">
-        <AnimatePresence mode="wait">
-          {activeTab === 'map' && (
-            <motion.div
-              key="map"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="h-full"
-            >
-              <MapAnalysis
-                selectedRegion={selectedRegion}
-                setSelectedRegion={setSelectedRegion}
-                selectedBusiness={selectedBusiness}
-                setSelectedBusiness={setSelectedBusiness}
-                analysisResult={analysisResult}
-                setAnalysisResult={setAnalysisResult}
-                onGoToInvestor={() => setActiveTab('gamification')}
-              />
-            </motion.div>
-          )}
+            {activeTab === 'simulation' && (
+              <motion.div
+                key="simulation"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ScenarioSimulation
+                  initialRegion={selectedRegion}
+                  initialBusiness={selectedBusiness}
+                />
+              </motion.div>
+            )}
 
-          {activeTab === 'simulation' && (
-            <motion.div
-              key="simulation"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ScenarioSimulation
-                initialRegion={selectedRegion}
-                initialBusiness={selectedBusiness}
-              />
-            </motion.div>
-          )}
+            {activeTab === 'gamification' && (
+              <motion.div
+                key="gamification"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <InvestorMode />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
 
-          {activeTab === 'gamification' && (
-            <motion.div
-              key="gamification"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <InvestorMode />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-slate-800 py-3 px-6">
-        <p className="text-center text-xs text-slate-600">
-          Radar de Oportunidades Inteligente · Feira Científica Smart Cities 2024 · Dados simulados para fins educacionais
-        </p>
-      </footer>
-    </div>
+        <footer className="app-footer">
+          <span className="flex items-center gap-2">
+            <Radar size={16} /> Radar de Oportunidades
+          </span>
+          <span>
+            Projeto educacional · Smart Cities · Dados e projeções sujeitos a
+            estimativas
+          </span>
+          <span className="footer-signature">
+            Encontre seu próximo passo <ArrowUpRight size={14} />
+          </span>
+        </footer>
+      </div>
+    </MotionConfig>
   )
 }

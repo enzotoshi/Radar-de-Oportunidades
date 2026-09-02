@@ -8,12 +8,15 @@ import type { Region, AnalysisResult, Hotspot } from '@/types'
 const OpenStreetMap = dynamic(() => import('./OpenStreetMap'), { ssr: false })
 
 function scoreToColor(score: number): string {
-  if (score >= 70) return '#00d4aa'
+  if (score >= 70) return '#73e2b4'
   if (score >= 40) return '#f59e0b'
   return '#ef4444'
 }
 
-function getRegionScore(region: Region, analysisResult: AnalysisResult | null): number {
+function getRegionScore(
+  region: Region,
+  analysisResult: AnalysisResult | null
+): number {
   if (!analysisResult) {
     // Default score based on consumption trend
     return Math.round((region.consumption_trend / 10) * 70 + 15)
@@ -27,6 +30,7 @@ interface MapComponentProps {
   onRegionSelect: (regionId: string) => void
   analysisResult: AnalysisResult | null
   hotspots?: Hotspot[]
+  focusLocation?: { lat: number; lng: number; address: string }
   onMapClick?: (lat: number, lng: number) => void
 }
 
@@ -36,19 +40,23 @@ export default function MapComponent({
   onRegionSelect,
   analysisResult,
   hotspots = [],
+  focusLocation,
 }: MapComponentProps) {
   const [center, setCenter] = useState<[number, number]>([-23.55, -46.63])
   const [zoom, setZoom] = useState(11)
-  const [markers, setMarkers] = useState<Array<{ position: [number, number]; title: string; color: string }>>([])
+  const [markers, setMarkers] = useState<
+    Array<{ position: [number, number]; title: string; color: string }>
+  >([])
 
   useEffect(() => {
     const newMarkers = regions.map((region) => {
-      const score = analysisResult && selectedRegion === region.id
-        ? analysisResult.opportunity_score
-        : getRegionScore(region, null)
-      
+      const score =
+        analysisResult && selectedRegion === region.id
+          ? analysisResult.opportunity_score
+          : getRegionScore(region, null)
+
       const color = scoreToColor(score)
-      
+
       return {
         position: [region.lat, region.lng] as [number, number],
         title: `${region.name} - Score: ${score.toFixed(0)}`,
@@ -65,11 +73,23 @@ export default function MapComponent({
       })
     })
 
+    if (focusLocation) {
+      newMarkers.push({
+        position: [focusLocation.lat, focusLocation.lng],
+        title: focusLocation.address,
+        color: '#73e2b4',
+      })
+    }
     setMarkers(newMarkers)
-  }, [regions, selectedRegion, analysisResult, hotspots])
+  }, [regions, selectedRegion, analysisResult, hotspots, focusLocation])
 
   // Atualizar centro quando região for selecionada
   useEffect(() => {
+    if (focusLocation) {
+      setCenter([focusLocation.lat, focusLocation.lng])
+      setZoom(15)
+      return
+    }
     if (selectedRegion) {
       const region = regions.find((r) => r.id === selectedRegion)
       if (region) {
@@ -77,15 +97,11 @@ export default function MapComponent({
         setZoom(14)
       }
     }
-  }, [selectedRegion, regions])
+  }, [selectedRegion, regions, focusLocation])
 
   return (
     <div className="w-full h-full">
-      <OpenStreetMap 
-        center={center}
-        zoom={zoom}
-        markers={markers}
-      />
+      <OpenStreetMap center={center} zoom={zoom} markers={markers} />
     </div>
   )
 }
