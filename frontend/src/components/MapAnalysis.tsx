@@ -16,9 +16,15 @@ import {
   Briefcase,
 } from 'lucide-react'
 import VoiceInput from './VoiceInput'
-import type { AIAnalysisResult } from '@/lib/api'
+import {
+  analyzeWithAI,
+  getBusinesses,
+  getRegions,
+  searchAddress,
+  type AIAnalysisResult,
+} from '@/lib/api'
 import { BUSINESSES } from '@/lib/data'
-import type { AnalysisResult, Business } from '@/types'
+import type { AnalysisResult, Business, Region } from '@/types'
 
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
@@ -41,6 +47,7 @@ export default function MapAnalysis({
   onGoToInvestor,
 }: Props) {
   const [businesses, setBusinesses] = useState<Business[]>(BUSINESSES)
+  const [regions, setRegions] = useState<Region[]>([])
   const [budget, setBudget] = useState<number>(100000)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,18 +77,7 @@ export default function MapAnalysis({
     }
 
     try {
-      // Usar Nominatim para autocomplete (gratuito!)
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=br&limit=5&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'Radar-Oportunidades-App',
-            'Accept-Language': 'pt-BR,pt',
-          },
-        }
-      )
-
-      const data = await response.json()
+      const data = await searchAddress(value)
 
       if (data && data.length > 0) {
         // Converter formato Nominatim para o formato esperado
@@ -124,13 +120,27 @@ export default function MapAnalysis({
   }
 
   useEffect(() => {
-    import('@/lib/api').then(({ getBusinesses }) => {
-      getBusinesses()
-        .then((b) => {
-          if (b.length) setBusinesses(b)
-        })
-        .catch(() => {})
-    })
+    Promise.allSettled([getBusinesses(), getRegions()]).then(
+      ([businessResult, regionResult]) => {
+        if (businessResult.status === 'fulfilled') {
+          const normalized = businessResult.value
+            .map((business) => {
+              if (typeof business !== 'string') return business
+              const key = business.toLocaleLowerCase('pt-BR')
+              return BUSINESSES.find(
+                (candidate) =>
+                  candidate.id.toLocaleLowerCase('pt-BR') === key ||
+                  candidate.name.toLocaleLowerCase('pt-BR') === key
+              )
+            })
+            .filter((business): business is Business => Boolean(business))
+          if (normalized.length) setBusinesses(normalized)
+        }
+        if (regionResult.status === 'fulfilled') {
+          setRegions(regionResult.value)
+        }
+      }
+    )
   }, [])
 
   const handleVoiceResult = (
@@ -159,17 +169,7 @@ export default function MapAnalysis({
     setCustomLocationResult(null)
 
     try {
-      // Buscar coordenadas via Nominatim
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(customAddress)}&countrycodes=br&limit=1`,
-        {
-          headers: {
-            'User-Agent': 'Radar-Oportunidades-App',
-          },
-        }
-      )
-
-      const data = await response.json()
+      const data = await searchAddress(customAddress)
 
       if (!data || data.length === 0) {
         throw new Error(
@@ -181,8 +181,6 @@ export default function MapAnalysis({
       const lng = parseFloat(data[0].lon)
       const locationName = data[0].display_name
 
-      // Usar análise com IA (ChatGPT)
-      const { analyzeWithAI } = await import('@/lib/api')
       const analysis = await analyzeWithAI(
         locationName,
         selectedBusiness,
@@ -681,7 +679,7 @@ export default function MapAnalysis({
             </div>
             <div className="map-canvas">
               <MapComponent
-                regions={[]}
+                regions={regions}
                 selectedRegion={selectedRegion}
                 onRegionSelect={setSelectedRegion}
                 analysisResult={analysisResult}

@@ -15,7 +15,35 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 60000, // 60 segundos para AI Hotspots que demora mais
+  headers: { 'Content-Type': 'application/json' },
 })
+
+const NOMINATIM_URL =
+  process.env.NEXT_PUBLIC_NOMINATIM_URL || 'https://nominatim.openstreetmap.org'
+
+export interface AddressSuggestion {
+  place_id: string
+  display_name: string
+  lat: string
+  lon: string
+  name?: string
+}
+
+export async function searchAddress(query: string): Promise<AddressSuggestion[]> {
+  if (query.trim().length < 3) return []
+  const { data } = await axios.get<AddressSuggestion[]>(`${NOMINATIM_URL}/search`, {
+    params: {
+      q: `${query}, Brasil`,
+      format: 'json',
+      addressdetails: 1,
+      limit: 5,
+      countrycodes: 'br',
+    },
+    headers: { 'Accept-Language': 'pt-BR,pt' },
+    timeout: 10000,
+  })
+  return data
+}
 
 export async function analyzeOpportunity(
   region: string,
@@ -49,9 +77,11 @@ export async function getRegions(): Promise<Region[]> {
   return data.regions
 }
 
-export async function getBusinesses(): Promise<Business[]> {
-  const { data } = await api.get<{ businesses: Business[] }>('/api/businesses')
-  return data.businesses
+export async function getBusinesses(): Promise<Array<Business | string>> {
+  const { data } = await api.get<
+    { businesses: Business[] } | Array<Business | string>
+  >('/api/businesses')
+  return Array.isArray(data) ? data : data.businesses
 }
 
 export async function calculateGameScore(
@@ -99,6 +129,80 @@ export async function analyzeCustomLocation(
       business_type: businessType,
       location_name: locationName,
     },
+  })
+  return data
+}
+
+// ── Análise com IA (ChatGPT) ──
+
+export interface AIAnalysisResult {
+  opportunity_score: number
+  competition: {
+    total_competitors: number
+    competition_level: string
+    average_rating: number
+    market_gap: string
+  }
+  demographics: {
+    target_audience: string
+    income_level: string
+    population_density: string
+    age_profile: string
+  }
+  infrastructure: {
+    infrastructure_score: number
+    accessibility: string
+    nearby_facilities: string
+    foot_traffic: string
+  }
+  mobility: {
+    mobility_score: number
+    public_transport: string
+    parking: string
+    walkability: string
+  }
+  swot: {
+    strengths: string[]
+    weaknesses: string[]
+    opportunities: string[]
+    threats: string[]
+  }
+  financial_projection: {
+    estimated_monthly_revenue: number
+    estimated_monthly_costs: number
+    breakeven_months: number
+    roi_expectation: string
+  }
+  recommendations: {
+    viability: string
+    key_insights: string[]
+    action_items: string[]
+    risks: string[]
+  }
+  summary: string
+  data_source: string
+  location: {
+    lat: number
+    lng: number
+    address: string
+  }
+  business_type: string
+  budget: number
+}
+
+export async function analyzeWithAI(
+  address: string,
+  businessType: string,
+  lat: number,
+  lng: number,
+  budget: number = 100000
+): Promise<AIAnalysisResult> {
+  const { data } = await api.post<AIAnalysisResult>('/api/analyze-with-ai', {
+    address,
+    business_type: businessType,
+    lat,
+    lng,
+    budget,
   })
   return data
 }
