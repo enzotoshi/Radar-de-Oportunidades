@@ -10,4 +10,4 @@
  * Desenvolvedor responsável: [SEU NOME]
  */
 
-export { default as ScenarioSimulation } from './ScenarioSimulation'
+export { default as ScenarioSimulation } from '../../components/ScenarioSimulation'

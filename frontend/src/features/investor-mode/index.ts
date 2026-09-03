@@ -10,4 +10,4 @@
  * Desenvolvedor responsável: [SEU NOME]
  */
 
-export { default as InvestorMode } from './InvestorMode'
+export { default as InvestorMode } from '../../components/Gamification'
