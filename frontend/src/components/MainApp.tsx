@@ -74,7 +74,7 @@ export default function MainApp() {
               ))}
             </nav>
             <span className="header-location">
-              <MapPin size={14} /> São Paulo & região
+              <MapPin size={14} /> Brasil · fontes públicas
             </span>
           </div>
         </header>
@@ -110,8 +110,9 @@ export default function MainApp() {
                 transition={{ duration: 0.2 }}
               >
                 <ScenarioSimulation
-                  initialRegion={selectedRegion}
-                  initialBusiness={selectedBusiness}
+                  analysisResult={analysisResult}
+                  businessType={selectedBusiness}
+                  onGoToMap={() => setActiveTab('map')}
                 />
               </motion.div>
             )}
@@ -124,7 +125,11 @@ export default function MainApp() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <InvestorMode />
+                <InvestorMode
+                  analysisResult={analysisResult}
+                  businessType={selectedBusiness}
+                  onGoToMap={() => setActiveTab('map')}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -138,8 +143,7 @@ export default function MainApp() {
             <BrandIdentity />
           </span>
           <span>
-            Projeto educacional · Smartcive · Dados e projeções sujeitos a
-            estimativas
+            Projeto educacional · fatos com fonte · cálculos e projeções identificados
           </span>
           <span className="footer-signature">
             Encontre seu próximo passo <ArrowUpRight size={14} />
