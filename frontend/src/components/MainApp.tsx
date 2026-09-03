@@ -5,9 +5,9 @@ import Image from 'next/image'
 import radarLogo from '../../public/logo-radar.png'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { Map, LineChart, Briefcase, MapPin, ArrowUpRight } from 'lucide-react'
-import { MapAnalysis } from '@/features/map-analysis'
-import { ScenarioSimulation } from '@/features/scenario-simulation'
-import { InvestorMode } from '@/features/investor-mode'
+import MapAnalysis from './MapAnalysis'
+import ScenarioSimulation from './ScenarioSimulation'
+import InvestorMode from './Gamification'
 import type { ActiveTab, AnalysisResult } from '@/types'
 
 const tabs = [
