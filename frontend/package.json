@@ -6,24 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "export": "next build",
-    "start": "next start"
+    "lint": "next lint",
+    "start": "serve out"
   },
   "dependencies": {
-    "next": "14.0.4",
+    "axios": "^1.6.2",
+    "framer-motion": "^10.16.16",
+    "lucide-react": "^0.294.0",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
-    "axios": "^1.6.2",
-    "recharts": "^2.10.3",
-    "lucide-react": "^0.294.0",
-    "framer-motion": "^10.16.16"
+    "recharts": "^2.10.3"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "postcss": "^8",
-    "tailwindcss": "^3.3.0"
+    "serve": "^14.2.6",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
   }
 }

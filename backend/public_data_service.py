@@ -10,6 +10,7 @@ import json
 import math
 import os
 import re
+import threading
 import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
@@ -33,6 +34,7 @@ _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
 NOMINATIM_URL = os.getenv("NOMINATIM_API_URL", "https://nominatim.openstreetmap.org")
 IBGE_V1_URL = "https://servicodados.ibge.gov.br/api/v1"
@@ -44,13 +46,17 @@ WORLDPOP_IMAGE_URL = os.getenv(
 WORLDPOP_YEAR = int(os.getenv("WORLDPOP_YEAR", "2020"))
 USER_AGENT = os.getenv(
     "NOMINATIM_USER_AGENT",
-    "RadarOportunidades/2.0 (dados-publicos; contato configuravel no .env)",
+    "RadarOportunidades/3.0 (+https://github.com/enzotoshi/Radar-de-Oportunidades)",
 )
 
 _session = requests.Session()
 _session.headers.update({"User-Agent": USER_AGENT, "Accept": "application/json"})
 _cache: Dict[str, Tuple[float, Any]] = {}
-CACHE_SECONDS = 60 * 60
+OSM_CACHE_SECONDS = 15 * 60
+GEOCODING_CACHE_SECONDS = 30 * 24 * 60 * 60
+ANNUAL_DATA_CACHE_SECONDS = 30 * 24 * 60 * 60
+_nominatim_lock = threading.Lock()
+_last_nominatim_request = 0.0
 
 
 BUSINESS_FILTERS: Dict[str, List[Tuple[str, str]]] = {
@@ -96,9 +102,9 @@ def _normalize(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
 
-def _cached(key: str) -> Any:
+def _cached(key: str, ttl_seconds: int) -> Any:
     item = _cache.get(key)
-    if item and time.time() - item[0] < CACHE_SECONDS:
+    if item and time.time() - item[0] < ttl_seconds:
         return item[1]
     return None
 
@@ -106,6 +112,38 @@ def _cached(key: str) -> Any:
 def _store(key: str, value: Any) -> Any:
     _cache[key] = (time.time(), value)
     return value
+
+
+def _validate_coordinates(lat: float, lng: float) -> None:
+    if not math.isfinite(lat) or not -90 <= lat <= 90:
+        raise ValueError("Latitude inválida.")
+    if not math.isfinite(lng) or not -180 <= lng <= 180:
+        raise ValueError("Longitude inválida.")
+
+
+def _nominatim_get(path: str, params: Dict[str, Any]) -> Any:
+    """Consulta identificada, serializada e cacheada conforme a política Nominatim."""
+    global _last_nominatim_request
+    cache_key = f"nominatim:{path}:{json.dumps(params, sort_keys=True, ensure_ascii=False)}"
+    cached = _cached(cache_key, GEOCODING_CACHE_SECONDS)
+    if cached is not None:
+        return cached
+
+    with _nominatim_lock:
+        cached = _cached(cache_key, GEOCODING_CACHE_SECONDS)
+        if cached is not None:
+            return cached
+        wait_seconds = 1.0 - (time.monotonic() - _last_nominatim_request)
+        if wait_seconds > 0:
+            time.sleep(wait_seconds)
+        response = _session.get(
+            f"{NOMINATIM_URL.rstrip('/')}/{path.lstrip('/')}",
+            params=params,
+            timeout=API_TIMEOUT,
+        )
+        _last_nominatim_request = time.monotonic()
+        response.raise_for_status()
+        return _store(cache_key, response.json())
 
 
 def _selector(key: str, pattern: str, radius: int, lat: float, lng: float) -> str:
@@ -138,6 +176,13 @@ def _business_filters(business_type: str) -> List[Tuple[str, str]]:
 
 
 def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[str, Any]:
+    _validate_coordinates(lat, lng)
+    if not 100 <= radius <= 10_000:
+        raise ValueError("O raio deve estar entre 100 e 10.000 metros.")
+    cache_key = f"osm:{lat:.5f}:{lng:.5f}:{_normalize(business_type)}:{radius}"
+    cached = _cached(cache_key, OSM_CACHE_SECONDS)
+    if cached is not None:
+        return cached
     filters = _business_filters(business_type)
     competitor_query = "\n".join(
         _selector(key, pattern, radius, lat, lng) for key, pattern in filters
@@ -186,7 +231,7 @@ out center tags;
 
     competitors: List[Dict[str, Any]] = []
     infra_counts = {label: 0 for label in INFRASTRUCTURE_TAGS.values()}
-    transport_count = 0
+    transport_count: Optional[int] = None
     all_ids = set()
 
     for element in elements:
@@ -194,7 +239,7 @@ out center tags;
             try:
                 transport_count = int((element.get("tags") or {}).get("total", 0))
             except (TypeError, ValueError):
-                transport_count = 0
+                raise PublicDataUnavailable("Contagem de mobilidade inválida no Overpass.")
             continue
         element_key = (element.get("type"), element.get("id"))
         if element_key in all_ids:
@@ -221,16 +266,18 @@ out center tags;
         if amenity in INFRASTRUCTURE_TAGS:
             infra_counts[INFRASTRUCTURE_TAGS[amenity]] += 1
     valid_competitors = [item for item in competitors if item["lat"] is not None and item["lng"] is not None]
+    if transport_count is None:
+        raise PublicDataUnavailable("O Overpass não retornou a contagem de mobilidade.")
     area_km2 = math.pi * (radius / 1000) ** 2
-    return {
+    return _store(cache_key, {
         "competitors": valid_competitors,
-        "competitor_count": len(competitors),
-        "competitor_density": round(len(competitors) / area_km2, 2),
+        "competitor_count": len(valid_competitors),
+        "competitor_density": round(len(valid_competitors) / area_km2, 2),
         "infrastructure": infra_counts,
         "infrastructure_count": sum(infra_counts.values()),
         "transport_count": transport_count,
         "osm_element_count": len(all_ids),
-    }
+    })
 
 
 def _format_osm_address(tags: Dict[str, str]) -> Optional[str]:
@@ -251,13 +298,12 @@ def _distance_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> floa
 
 
 def _reverse_location(lat: float, lng: float) -> Dict[str, Optional[str]]:
-    response = _session.get(
-        f"{NOMINATIM_URL.rstrip('/')}/reverse",
-        params={"format": "jsonv2", "lat": lat, "lon": lng, "zoom": 10, "addressdetails": 1},
-        timeout=API_TIMEOUT,
+    _validate_coordinates(lat, lng)
+    payload = _nominatim_get(
+        "reverse",
+        {"format": "jsonv2", "lat": lat, "lon": lng, "zoom": 10, "addressdetails": 1},
     )
-    response.raise_for_status()
-    address = response.json().get("address") or {}
+    address = payload.get("address") or {}
     city = next(
         (address.get(key) for key in ("municipality", "city", "town", "village") if address.get(key)),
         None,
@@ -270,7 +316,7 @@ def _find_ibge_city(city: str, state_code: Optional[str]) -> Optional[Dict[str, 
         return None
     endpoint = f"localidades/estados/{state_code}/municipios" if state_code else "localidades/municipios"
     cache_key = f"ibge-cities:{state_code or 'br'}"
-    cities = _cached(cache_key)
+    cities = _cached(cache_key, GEOCODING_CACHE_SECONDS)
     if cities is None:
         response = _session.get(f"{IBGE_V1_URL}/{endpoint}", timeout=API_TIMEOUT)
         response.raise_for_status()
@@ -280,6 +326,10 @@ def _find_ibge_city(city: str, state_code: Optional[str]) -> Optional[Dict[str, 
 
 
 def _latest_aggregate(aggregate: str, variable: str, city_id: int) -> Optional[Dict[str, Any]]:
+    cache_key = f"ibge-aggregate:{aggregate}:{variable}:{city_id}"
+    cached = _cached(cache_key, ANNUAL_DATA_CACHE_SECONDS)
+    if cached is not None:
+        return cached
     response = _session.get(
         f"{IBGE_V3_URL}/agregados/{aggregate}/periodos/-1/variaveis/{variable}",
         params={"localidades": f"N6[{city_id}]"},
@@ -288,12 +338,24 @@ def _latest_aggregate(aggregate: str, variable: str, city_id: int) -> Optional[D
     response.raise_for_status()
     data = response.json()
     try:
-        series = data[0]["resultados"][0]["series"][0]["serie"]
+        item = data[0]
+        series = item["resultados"][0]["series"][0]["serie"]
     except (IndexError, KeyError, TypeError):
         return None
     for year, raw_value in sorted(series.items(), reverse=True):
         if raw_value not in (None, "", "-"):
-            return {"value": float(raw_value), "year": year}
+            value = float(raw_value)
+            if not math.isfinite(value) or value < 0:
+                continue
+            return _store(
+                cache_key,
+                {
+                    "value": value,
+                    "year": year,
+                    "unit": item.get("unidade"),
+                    "variable": item.get("variavel"),
+                },
+            )
     return None
 
 
@@ -303,10 +365,110 @@ def _query_ibge(lat: float, lng: float) -> Dict[str, Any]:
     if not city:
         return {"location": location, "city": None, "gdp": None}
     gdp = _latest_aggregate("5938", "37", city["id"])
-    return {"location": location, "city": {"id": city["id"], "name": city["nome"]}, "gdp": gdp}
+    return {
+        "location": location,
+        "city": {
+            "id": city["id"],
+            "name": city["nome"],
+            "state": location.get("state_code"),
+        },
+        "gdp": gdp,
+    }
+
+
+def search_locations(query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    """Geocodifica uma busca explícita no Brasil; não deve ser usada como autocomplete."""
+    cleaned = " ".join(query.split())
+    if len(cleaned) < 3:
+        raise ValueError("Informe ao menos três caracteres para buscar.")
+    payload = _nominatim_get(
+        "search",
+        {
+            "q": f"{cleaned}, Brasil",
+            "format": "jsonv2",
+            "addressdetails": 1,
+            "limit": max(1, min(limit, 5)),
+            "countrycodes": "br",
+        },
+    )
+    if not isinstance(payload, list):
+        raise PublicDataUnavailable("Nominatim retornou um formato inesperado.")
+
+    results = []
+    for item in payload:
+        try:
+            lat = float(item["lat"])
+            lng = float(item["lon"])
+            _validate_coordinates(lat, lng)
+        except (KeyError, TypeError, ValueError):
+            continue
+        address = item.get("address") or {}
+        city_name = next(
+            (
+                address.get(key)
+                for key in ("municipality", "city", "town", "village")
+                if address.get(key)
+            ),
+            None,
+        )
+        state_code = (address.get("ISO3166-2-lvl4") or "").split("-")[-1] or None
+        municipality = None
+        if city_name:
+            try:
+                city = _find_ibge_city(city_name, state_code)
+                if city:
+                    municipality = {
+                        "ibge_code": str(city["id"]),
+                        "name": city["nome"],
+                        "state": state_code,
+                    }
+            except (requests.RequestException, ValueError):
+                municipality = None
+        results.append(
+            {
+                "place_id": str(item.get("place_id", "")),
+                "display_name": item.get("display_name") or cleaned,
+                "lat": lat,
+                "lng": lng,
+                "municipality": municipality,
+                "source": "Nominatim/OpenStreetMap",
+            }
+        )
+    return results
+
+
+def list_municipalities(state_code: Optional[str] = None) -> List[Dict[str, str]]:
+    """Lista municípios e códigos oficiais diretamente da API de Localidades."""
+    state = state_code.upper() if state_code else None
+    if state and not re.fullmatch(r"[A-Z]{2}", state):
+        raise ValueError("UF deve conter duas letras.")
+    endpoint = f"localidades/estados/{state}/municipios" if state else "localidades/municipios"
+    cache_key = f"ibge-municipalities:{state or 'br'}"
+    payload = _cached(cache_key, GEOCODING_CACHE_SECONDS)
+    if payload is None:
+        response = _session.get(f"{IBGE_V1_URL}/{endpoint}", timeout=API_TIMEOUT)
+        response.raise_for_status()
+        payload = _store(cache_key, response.json())
+    if not isinstance(payload, list):
+        raise PublicDataUnavailable("IBGE retornou um formato inesperado.")
+    return [
+        {
+            "ibge_code": str(item["id"]),
+            "name": item["nome"],
+            "state": state or "",
+            "source": "IBGE API de Localidades",
+        }
+        for item in payload
+        if item.get("id") and item.get("nome")
+    ]
 
 
 def _query_worldpop(lat: float, lng: float, radius: int) -> Dict[str, Any]:
+    _validate_coordinates(lat, lng)
+    cache_key = f"worldpop:{WORLDPOP_YEAR}:{lat:.5f}:{lng:.5f}:{radius}"
+    cached = _cached(cache_key, ANNUAL_DATA_CACHE_SECONDS)
+    if cached is not None:
+        return cached
     """Soma uma vez cada célula WorldPop de 100 m cujo centro cai no raio."""
     # Alinhamento documentado pelo ImageServer. Usar os centros reais dos pixels
     # impede que dois pontos consultem a mesma célula do raster.
@@ -349,18 +511,28 @@ def _query_worldpop(lat: float, lng: float, radius: int) -> Dict[str, Any]:
     if not isinstance(samples, list) or not samples:
         raise ValueError("WorldPop não retornou células para a área.")
     total = 0.0
+    valid_samples = 0
     for sample in samples:
         try:
-            total += float(sample.get("value", 0))
+            raw_value = sample.get("value")
+            if raw_value is None:
+                continue
+            value = float(raw_value)
+            if not math.isfinite(value) or value < 0 or value >= 1e20:
+                continue
+            total += value
+            valid_samples += 1
         except (TypeError, ValueError):
             continue
-    return {
+    if valid_samples == 0:
+        raise ValueError("WorldPop não retornou células populacionais válidas.")
+    return _store(cache_key, {
         "value": round(total),
         "year": WORLDPOP_YEAR,
         "resolution": "100 m",
         "area_km2": round(math.pi * (radius / 1000) ** 2, 2),
-        "sampled_cells": len(samples),
-    }
+        "sampled_cells": valid_samples,
+    })
 
 
 def _score(osm: Dict[str, Any]) -> Dict[str, float]:
@@ -378,9 +550,10 @@ def _score(osm: Dict[str, Any]) -> Dict[str, float]:
 
 def analyze_public_data(lat: float, lng: float, business_type: str, radius: int = 1500) -> Dict[str, Any]:
     """Retorna somente observações reais e índices derivados explicitamente delas."""
+    _validate_coordinates(lat, lng)
     cache_key = f"analysis:{lat:.5f}:{lng:.5f}:{_normalize(business_type)}:{radius}"
-    cached = _cached(cache_key)
-    if cached:
+    cached = _cached(cache_key, OSM_CACHE_SECONDS)
+    if cached is not None:
         return cached
 
     # As três fontes são independentes e podem ser consultadas ao mesmo tempo.
@@ -391,7 +564,7 @@ def analyze_public_data(lat: float, lng: float, business_type: str, radius: int 
 
         try:
             osm = osm_future.result()
-        except (requests.RequestException, ValueError) as exc:
+        except (requests.RequestException, ValueError, PublicDataUnavailable) as exc:
             raise PublicDataUnavailable(f"OpenStreetMap/Overpass indisponível: {exc}") from exc
 
         ibge_error = None
@@ -415,18 +588,28 @@ def analyze_public_data(lat: float, lng: float, business_type: str, radius: int 
         "score": _score(osm),
         "radius_meters": radius,
         "sources": [
-            {"name": "OpenStreetMap/Overpass", "url": "https://www.openstreetmap.org/copyright", "status": "ok"},
+            {
+                "name": "OpenStreetMap/Overpass",
+                "url": "https://www.openstreetmap.org/copyright",
+                "status": "ok",
+                "reference": "consulta no momento da coleta",
+                "license": "ODbL 1.0",
+            },
             {
                 "name": "IBGE SIDRA",
                 "url": "https://sidra.ibge.gov.br/",
                 "status": "partial"
                 if ibge_error or not ibge.get("city") or not ibge.get("gdp")
                 else "ok",
+                "reference": ibge.get("gdp", {}).get("year") if ibge.get("gdp") else None,
+                "license": "Dados públicos do IBGE",
             },
             {
-                "name": "WorldPop Global 2",
-                "url": "https://www.worldpop.org/",
+                "name": "WorldPop 100 m (via Esri)",
+                "url": "https://worldpop.arcgis.com/arcgis/rest/services/WorldPop_Total_Population_100m/ImageServer",
                 "status": "partial" if population_error or not population else "ok",
+                "reference": str(WORLDPOP_YEAR),
+                "license": "CC BY 4.0",
             },
         ],
         "collected_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
