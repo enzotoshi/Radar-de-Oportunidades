@@ -26,6 +26,7 @@ node_modules/
 .next/
 out/
 npm-debug.log*
+frontend/artifacts/
 
 # OS
 .DS_Store

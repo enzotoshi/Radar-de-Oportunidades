@@ -46,6 +46,17 @@ npm ci
 npm run dev
 ```
 
+Validação do frontend (com o frontend iniciado em `http://localhost:3001` para o teste de navegador):
+
+```powershell
+cd frontend
+npm run test:architecture
+npm run build
+npx next dev -p 3001
+# Em outro terminal:
+npm run test:ui
+```
+
 Acesse:
 
 - Frontend: http://localhost:3000

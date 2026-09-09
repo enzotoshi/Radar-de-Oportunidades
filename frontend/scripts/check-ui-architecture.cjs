@@ -26,4 +26,8 @@ assert.match(layout, /@fontsource-variable\/ibm-plex-sans/)
 assert.doesNotMatch(globals, /font-size:\s*\.5rem/)
 assert.doesNotMatch(globals, /font-size:\s*\.5625rem/)
 
+for (const legacy of ['rail-context', 'confetti-piece', 'step-number']) {
+  assert.doesNotMatch(globals, new RegExp(`\\.${legacy}\\b`), `Legacy selector ${legacy}`)
+}
+
 console.log('UI architecture checks passed')

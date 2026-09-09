@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
-html { min-width: 20rem; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + var(--space-4)); }
+html { min-width: 320px; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + var(--space-4)); }
 body { margin: 0; min-height: 100svh; background: var(--color-canvas); color: var(--color-ink); font-family: 'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, sans-serif; font-size: var(--text-body); line-height: 1.55; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

@@ -8,7 +8,7 @@ import type { Map as LeafletMap, Marker } from 'leaflet'
 interface Props {
   center?: [number, number]
   zoom?: number
-  markers?: Array<{ position: [number, number]; title: string; color?: string }>
+  markers?: Array<{ position: [number, number]; title: string; kind?: 'analysis' | 'business' }>
 }
 
 // One shared load also handles React Strict Mode mounting twice in development.
@@ -30,6 +30,7 @@ export default function OpenStreetMap({
 }: Props) {
   const reducedMotion = useReducedMotion()
   const mapRef = useRef<HTMLDivElement>(null)
+  const initialViewRef = useRef({ center, zoom })
   const mapInstanceRef = useRef<LeafletMap | null>(null)
   const markersRef = useRef<Marker[]>([])
   const leafletRef = useRef<typeof import('leaflet') | null>(null)
@@ -46,7 +47,7 @@ export default function OpenStreetMap({
       .then((L) => {
         if (disposed || !mapRef.current) return
         leafletRef.current = L
-        const map = L.map(mapRef.current).setView([-23.5505, -46.6333], 12)
+        const map = L.map(mapRef.current).setView(initialViewRef.current.center, initialViewRef.current.zoom)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution:
             '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -80,16 +81,9 @@ export default function OpenStreetMap({
     if (!ready || !map || !L) return
     markersRef.current.forEach((marker) => marker.remove())
     markersRef.current = markers.map(
-      ({ position, title, color = '#73e2b4' }) => {
+      ({ position, title, kind = 'analysis' }) => {
         const dot = document.createElement('div')
-        Object.assign(dot.style, {
-          backgroundColor: color,
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          border: '3px solid white',
-          boxShadow: '0 0 0 7px #73e2b430, 0 2px 8px #0003',
-        })
+        dot.className = `map-marker map-marker--${kind}`
         const markerIcon = L.divIcon({
           className: 'custom-marker',
           html: dot,

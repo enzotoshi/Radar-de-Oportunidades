@@ -26,12 +26,12 @@ export default function MapComponent({ analysisResult }: MapComponentProps) {
         {
           position: [analysisResult.location.lat, analysisResult.location.lng] as [number, number],
           title: 'Local analisado: ' + analysisResult.location.address,
-          color: '#73e2b4',
+          kind: 'analysis' as const,
         },
         ...analysisResult.business_markers.map((marker) => ({
           position: [marker.lat, marker.lng] as [number, number],
           title: marker.name + (marker.address ? ' — ' + marker.address : ''),
-          color: '#3b82f6',
+          kind: 'business' as const,
         })),
       ]
     : [], [analysisResult])

@@ -1,20 +1,16 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-import { ArrowUpRight, MapPin, Database } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowRight, Database } from 'lucide-react'
+import radarLogo from '../../public/logo-radar.png'
+import Button from './shared/Button'
+import StatusBadge from './shared/StatusBadge'
 
-const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
+interface Props { areaLabel: string; title: string; description: string; onGoToMap: () => void }
 
-export default function AnalysisRequired({ title, description, onGoToMap }: { title: string; description: string; onGoToMap: () => void }) {
-  return (
-    <div className="analysis-required">
-      <div className="required-map" aria-label="Território de referência"><MapComponent analysisResult={null} /><span className="required-map-label"><MapPin size={16} />Brasil</span></div>
-      <section className="required-action">
-        <span className="eyebrow"><Database size={16} />PONTO DE PARTIDA</span>
-        <h2>{title}</h2><p>{description}</p>
-        <button type="button" onClick={onGoToMap} className="primary-button">Ir para o mapa<ArrowUpRight size={18} /></button>
-        <div className="required-status"><span className="status-dot" />Nenhuma análise selecionada</div>
-      </section>
-    </div>
-  )
+export default function AnalysisRequired({ areaLabel, title, description, onGoToMap }: Props) {
+  return <section className="analysis-required" aria-label={`${areaLabel} sem análise`}>
+    <div className="required-visual"><div className="required-radar"><Image src={radarLogo} alt="" width={148} height={148} /></div><span>Brasil · fontes públicas</span></div>
+    <div className="required-action"><span className="section-kicker"><Database size={16} aria-hidden="true" />Ponto de partida</span><h2>{title}</h2><p>{description}</p><Button type="button" onClick={onGoToMap}>Ir para o mapa <ArrowRight size={18} aria-hidden="true" /></Button><StatusBadge>Nenhuma análise selecionada</StatusBadge></div>
+  </section>
 }

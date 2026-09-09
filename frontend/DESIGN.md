@@ -1,38 +1,47 @@
-# Frontend: design and verification
+# Atlas operacional — sistema de interface
 
-Reference: the complete Apple Design skill supplied in `Downloads/SKILL.md`.
+O frontend do Radar de Oportunidades funciona como uma estação cartográfica de decisão. A interface mantém o mapa como evidência espacial, a consulta como entrada controlada e a leitura de sinais como apoio à decisão. Não há dados de demonstração no código de produção.
 
-## Presentation
+## Princípios
 
-- Keep the Radar identity and logo. A dark navigation rail and light work surface give the product distinct structural regions; deep green actions remain legible on white.
-- Use system typography, rem-based sizing, visible keyboard focus and 44px minimum primary targets.
-- Give the map the primary workspace, with a collapsible inspector to its right. Query and result modes share that inspector without unmounting form state. The analysis action remains outside the scrollable fields.
-- Reserve translucency for map overlays, mobile navigation and sheet headers. Map tiles have their own stacking context so they cannot obscure labels or controls.
-- Center the simulation on its projected value and area chart, with assumptions in a dedicated inspector. Present investor results as a score ring with the three weighted components and evidence alongside it.
-- Use native modal dialogs for progressively disclosed sources and methodology, with focus containment, Escape handling, focus restoration and symmetric spring entry/exit.
-- Native Leaflet gestures and native range inputs retain direct manipulation. Framer Motion provides critically damped navigation springs; large view changes use short opacity transitions.
-- Observe reduced motion dynamically; provide solid materials for reduced transparency and stronger boundaries for increased contrast.
+- Hierarquia orientada à tarefa: configurar, observar, interpretar e decidir.
+- Proveniência visível: observado, estimado e calculado têm texto, ícone e cor próprios.
+- Transparência: dado ausente permanece “Dado indisponível”; projeção e pontuação educacional não são apresentadas como previsão.
+- Interação acessível: WCAG 2.1 AA, foco visível, controles de pelo menos 44 px, reflow em 320 px e uso completo por teclado.
+- Movimento funcional: apenas opacity/transform nos tempos de 100, 180 e 260 ms, com `prefers-reduced-motion`.
 
-## Ownership
+## Tokens e tipografia
 
-- `src/app/globals.css`: shared tokens, materials, control states and responsive layouts.
-- `src/lib/motion.ts`: spring and fade settings.
-- `src/lib/useReducedMotion.ts`: live operating-system preference subscription.
-- `MainApp.tsx`: navigation and visited-view lifetime. Switching views preserves forms and results; microphone capture ends when the map view becomes inactive.
-- `MapAnalysis.tsx`: accessible address selection, existing analysis form and full map workspace; stale requests cannot replace a newer selection.
-- `AnalysisReport.tsx`: score, metrics, interpretation, warnings and the source/methodology sheet.
-- `AnalysisRequired.tsx`: contextual map and actionable empty state shared by simulation and investor views.
-- `DetailsSheet.tsx`: accessible native dialog with motion from the same spatial origin on entry and exit.
-- `ScenarioSimulation.tsx`: native sliders, chart and equivalent tabular values. A new analysis invalidates the prior projection, including in-flight responses.
-- `Gamification.tsx`: existing evaluation, score components, feedback and retry. A new analysis invalidates an in-flight evaluation.
-- `OpenStreetMap.tsx`: the existing Leaflet 1.9.4 map is bundled locally instead of loaded from a CDN; map tiles still come from OpenStreetMap.
+`src/styles/tokens.css` concentra três camadas: primitivas da identidade, papéis semânticos e medidas de componentes. Petróleo estrutura a aplicação, turquesa identifica ação, azul representa dados e âmbar/vermelho comunicam atenção e erro. IBM Plex Sans Variable é empacotada localmente.
 
-API paths, payloads, types, backend calculations and the static-export route remain unchanged.
+`src/styles/base.css` define reset, semântica global, foco, leitor de tela, redução de movimento e forced colors. `src/app/globals.css` contém a composição responsiva dos domínios e seus estados.
 
-## Verification
+## Componentes e responsabilidades
 
-Run `npm run build` for compilation, lint and type checks. Run `node scripts/review-ui.cjs` with a local frontend at port 3001, a Playwright module available via `PLAYWRIGHT_MODULE`, and Chrome via `CHROME_PATH` (or the default Windows installation).
+- `app-shell`: cabeçalho compacto e navegação responsiva entre Explorar, Simular e Modo investidor.
+- `shared`: botões, botão de ícone, alertas, status e natureza dos dados.
+- `analysis`: combobox de endereço, formulário da consulta, métricas, evidências e proveniência.
+- `simulation`: controles de hipótese e gráfico com tabela equivalente.
+- `investor`: visão geral e decomposição da pontuação.
+- `MainApp.tsx`: estado de domínio compartilhado e retenção das áreas visitadas.
+- `MapAnalysis.tsx`, `ScenarioSimulation.tsx` e `Gamification.tsx`: orquestração de cada fluxo e proteção contra respostas obsoletas.
+- `src/lib/api.ts` e `src/types/index.ts`: fronteira estável com o FastAPI, sem alterações de contrato.
 
-The browser check first inspects the real catalogue, logo and fully loaded map tiles, then intercepts API responses with explicit contract fixtures to exercise success and failure states reproducibly. These fixtures are never imported by the application. It checks all three views at 1440, 1024, 768, 390 and 320px, keyboard selection, state retention, request bodies, map popups and zoom, overlay stacking, inspector collapse, dialog focus restoration, chart rendering after navigation, 200% text scaling, reduced motion, and errors. Screenshots and the machine-readable report are written to `artifacts/deep-redesign`. The local `artifacts/comparacao.html` compares these screenshots with the prior implementation.
+## Modos responsivos
 
-Live external data availability and microphone permission/recognition depend on the network and browser and are separate from the fixture-based workflow checks.
+- 1440 px ou mais: consulta, mapa e evidências em três colunas.
+- 1024–1439 px: consulta e mapa; evidências em painel lateral controlado.
+- 768–1023 px: consulta e mapa empilhados, com campos em grade.
+- Até 767 px: fluxo vertical, mapa com 48svh, evidências no documento e navegação inferior com safe area.
+
+## Validação
+
+```powershell
+npm run test:architecture
+npm run build
+npm run test:ui
+```
+
+`test:ui` usa contratos determinísticos exclusivamente no teste, valida os três payloads, teclado, diálogos, estados inicial/sucesso/erro, 15 combinações responsivas, zoom textual de 200%, redução de movimento e Axe. Capturas e relatório ficam em `artifacts/atlas-operacional`.
+
+O backend, as fontes externas, a lógica de pontuação e o formato de exportação estática do Next.js permanecem inalterados.
