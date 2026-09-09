@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import {
-  ArrowLeft,
   Briefcase,
   Database,
   Loader2,
@@ -14,6 +14,10 @@ import {
 } from 'lucide-react'
 import { calculateGameScore, getApiError } from '@/lib/api'
 import type { AnalysisResult, GameResult } from '@/types'
+import AnalysisRequired from './AnalysisRequired'
+import DetailsSheet from './DetailsSheet'
+
+const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
 interface Props {
   analysisResult: AnalysisResult | null
@@ -150,23 +154,14 @@ export default function Gamification({
           <span className="eyebrow"><Briefcase size={15} /> MODO INVESTIDOR EDUCACIONAL</span>
           <h1>Leia os sinais. Questione os limites.</h1>
         </div>
-        <div className="panel simulation-empty">
-          <span className="icon-tile large"><Database size={28} /></span>
-          <h2>O desafio começa com dados reais.</h2>
-          <p>
-            Faça uma análise no mapa. O modo investidor não cria bairros,
-            rendas, custos ou tendências de reserva.
-          </p>
-          <button type="button" onClick={onGoToMap} className="primary-button">
-            <ArrowLeft size={16} /> Ir para o mapa
-          </button>
-        </div>
+        <AnalysisRequired title="O desafio começa com dados reais." description="Faça uma análise no mapa. O modo investidor não cria bairros, rendas, custos ou tendências de reserva." onGoToMap={onGoToMap} />
       </div>
     )
   }
 
   return (
     <div className="page-container investor-page">
+      <div className="page-heading"><span className="eyebrow"><Briefcase size={15} />MODO INVESTIDOR EDUCACIONAL</span><h1>Leia os sinais. Questione os limites.</h1><p>A pontuação usa os componentes da consulta real selecionada. Ela não representa retorno ou chance de sucesso.</p></div>
       {showConfetti && !reducedMotion && <Confetti />}
         {phase === 'intro' && (
           <motion.div
@@ -175,13 +170,9 @@ export default function Gamification({
             animate={{ opacity: 1, scale: 1 }}
             className="investor-intro"
           >
-            <div className="investor-story page-heading">
-              <span className="eyebrow"><Briefcase size={15} /> MODO INVESTIDOR EDUCACIONAL</span>
-              <h1>Leia os sinais.<br /><em>Questione os limites.</em></h1>
-              <p>
-                A pontuação usa exclusivamente os componentes da consulta real
-                selecionada. Ela não representa retorno ou chance de sucesso.
-              </p>
+            <div className="investor-territory">
+              <div className="investor-map"><MapComponent analysisResult={analysisResult} /></div>
+              <div className="territory-caption"><span className="eyebrow">ANÁLISE SELECIONADA</span><h2>{analysisResult.location.municipality?.name || 'Território consultado'}</h2><p>{analysisResult.location.address}</p></div>
               <div className="investor-pillars">
                 <span><Target size={20} /> Concorrência mapeada</span>
                 <span><ShieldCheck size={20} /> Infraestrutura mapeada</span>
@@ -189,7 +180,7 @@ export default function Gamification({
               </div>
             </div>
 
-            <div className="panel investor-capital space-y-6">
+            <div className="investor-capital">
               <span className="icon-tile large"><Briefcase size={28} /></span>
               <div>
                 <h2 className="text-xl font-bold text-white">Análise selecionada</h2>
@@ -229,43 +220,47 @@ export default function Gamification({
             key="result"
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="investor-result space-y-5"
+            className="investor-result"
           >
-            <div className="text-center">
+            <div className="investor-result-title">
               <Target size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />
-              <h1 className="text-2xl font-black text-white">{gameResult.classification}</h1>
+              <h2>{gameResult.classification}</h2>
               <p className="text-slate-400 text-sm mt-1">
                 Pontuação própria, educacional e derivada de dados OSM
               </p>
             </div>
 
-            <div className="score-summary text-center" role="status">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">Pontuação educacional</p>
-              <p className="text-6xl font-black text-accent">{gameResult.total_score}</p>
-              <p className="text-slate-400 text-xs">de 1000 pontos · não é indicador oficial</p>
+            <div className="investor-score-layout">
+            <div className="score-summary score-overview" role="status">
+              <span className="eyebrow">PONTUAÇÃO EDUCACIONAL</span>
+              <div className="score-dial" style={{ '--score-angle': `${gameResult.total_score / 1000 * 360}deg` } as CSSProperties}><div><strong>{gameResult.total_score}</strong><span>de 1000 pontos</span></div></div>
+              <p className="field-help">Metodologia própria · não é indicador oficial</p>
             </div>
 
-            <div className="panel space-y-3">
+            <div className="score-evidence">
+            <div className="score-components">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Componentes calculados
               </h3>
-              <ScoreBar label="Concorrência mapeada" value={gameResult.competition_component} max={400} color="#00d4aa" />
-              <ScoreBar label="Infraestrutura mapeada" value={gameResult.infrastructure_component} max={300} color="#f59e0b" />
-              <ScoreBar label="Mobilidade mapeada" value={gameResult.mobility_component} max={300} color="#68a9ff" />
+              <ScoreBar label="Concorrência mapeada" value={gameResult.competition_component} max={400} color="#087b55" />
+              <ScoreBar label="Infraestrutura mapeada" value={gameResult.infrastructure_component} max={300} color="#b88025" />
+              <ScoreBar label="Mobilidade mapeada" value={gameResult.mobility_component} max={300} color="#3978b6" />
             </div>
 
-            <div className="panel space-y-2">
+            <div className="score-feedback">
               <p className="text-sm text-slate-300">{gameResult.feedback}</p>
-              <p className="text-xs text-slate-500">{gameResult.methodology}</p>
+              <DetailsSheet title="Metodologia da pontuação"><p>{gameResult.methodology}</p></DetailsSheet>
               <p className="text-xs text-slate-500">
                 Dados coletados em {new Date(gameResult.source_analysis_at).toLocaleString('pt-BR')}
               </p>
             </div>
 
-            <div className="panel space-y-2">
+            <div className="score-tips">
               {gameResult.tips.map((tip) => (
                 <p key={tip} className="text-xs text-slate-400">→ {tip}</p>
               ))}
+            </div>
+            </div>
             </div>
 
             <button

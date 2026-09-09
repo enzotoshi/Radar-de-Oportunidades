@@ -6,7 +6,7 @@ import radarLogo from '../../public/logo-radar.png'
 import { motion, MotionConfig } from 'framer-motion'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import { uiSpring, gentleFade } from '@/lib/motion'
-import { Map, LineChart, Briefcase, MapPin, ArrowUpRight } from 'lucide-react'
+import { Map, LineChart, Briefcase, MapPin, ArrowUpRight, Database, ArrowRight } from 'lucide-react'
 import MapAnalysis from './MapAnalysis'
 import ScenarioSimulation from './ScenarioSimulation'
 import InvestorMode from './Gamification'
@@ -29,7 +29,7 @@ function BrandIdentity() {
         height={52}
       />
       <span className="brand-name">
-        Radar de Oportunidades Inteligente
+        <strong>Radar</strong><span>de Oportunidades Inteligente</span>
       </span>
     </>
   )
@@ -69,10 +69,13 @@ export default function MainApp() {
             >
               <BrandIdentity />
             </button>
+            <span className="nav-section-label">ÁREA DE TRABALHO</span>
             <nav className="app-nav" aria-label="Navegação principal">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
+                  aria-label={label}
+                  title={label}
                   onClick={() => navigate(id)}
                   aria-current={activeTab === id ? 'page' : undefined}
                   className={`nav-item ${activeTab === id ? 'is-active' : ''}`}
@@ -82,15 +85,26 @@ export default function MainApp() {
                   )}
                   <Icon size={18} aria-hidden="true" />
                   <span>{label}</span>
+                  <ArrowRight className="nav-arrow" size={15} aria-hidden="true" />
                 </button>
               ))}
             </nav>
+            <div className="rail-context">
+              <span className="eyebrow">TERRITÓRIO EM ANÁLISE</span>
+              <MapPin size={21} />
+              <p>{analysisResult?.location.municipality?.name || selectedRegion || 'Nenhuma localização selecionada'}</p>
+              <span>{analysisResult ? 'Consulta disponível' : 'Aguardando consulta'}</span>
+            </div>
             <span className="header-location">
-              <MapPin size={14} /> Brasil · fontes públicas
+              <Database size={14} /> Brasil · fontes públicas
             </span>
           </div>
         </header>
         <main id="conteudo" className="flex-1" tabIndex={-1}>
+          <div className="workspace-bar">
+            <span>Radar <span className="breadcrumb-divider">/</span> <strong>{tabs.find(tab => tab.id === activeTab)?.label}</strong></span>
+            <span className="workspace-status"><span className="status-dot" /> {analysisResult ? 'Análise disponível' : 'Dados públicos, decisões conscientes'}</span>
+          </div>
           <div className="view-stack">
             {visited.includes('map') && (
               <motion.div

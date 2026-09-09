@@ -4,8 +4,8 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import {
   CartesianGrid,
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -13,9 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import {
-  ArrowLeft,
   LineChart as ChartIcon,
-  Info,
   Loader2,
   Minus,
   SlidersHorizontal,
@@ -25,6 +23,8 @@ import {
 } from 'lucide-react'
 import { getApiError, simulateScenario } from '@/lib/api'
 import type { AnalysisResult, SimulationResult } from '@/types'
+import AnalysisRequired from './AnalysisRequired'
+import DetailsSheet from './DetailsSheet'
 
 interface Props {
   analysisResult: AnalysisResult | null
@@ -142,7 +142,7 @@ export default function ScenarioSimulation({
         : Minus
 
   return (
-    <div className="page-container simulation-page space-y-6">
+    <div className="page-container simulation-page">
       <motion.div
         className="page-heading"
         initial={{ opacity: 0, y: 10 }}
@@ -157,25 +157,15 @@ export default function ScenarioSimulation({
       </motion.div>
 
       {!analysisResult ? (
-        <div className="panel simulation-empty">
-          <span className="icon-tile large"><Info size={28} /></span>
-          <h2>Faça primeiro uma análise real.</h2>
-          <p>
-            A simulação precisa de uma localização geocodificada e de dados
-            observados; não existe cenário local fictício de reserva.
-          </p>
-          <button type="button" onClick={onGoToMap} className="primary-button">
-            <ArrowLeft size={16} /> Ir para o mapa
-          </button>
-        </div>
+        <AnalysisRequired title="Faça primeiro uma análise real." description="A simulação precisa de uma localização geocodificada e de dados observados; não existe cenário local fictício de reserva." onGoToMap={onGoToMap} />
       ) : (
         <div className="simulation-grid">
-          <div className="space-y-4">
-            <div className="panel space-y-3">
+          <aside className="scenario-inspector">
+            <div className="scenario-location">
               <div className="panel-heading">
                 <span className="icon-tile"><SlidersHorizontal size={18} /></span>
                 <div>
-                  <h3>Ponto de partida observado</h3>
+                  <h3>Território selecionado</h3>
                   <p>{analysisResult.location.address}</p>
                 </div>
               </div>
@@ -187,7 +177,7 @@ export default function ScenarioSimulation({
               </p>
             </div>
 
-            <div className="panel space-y-5">
+            <div className="hypothesis-controls">
               <h3 className="text-sm font-semibold text-slate-300">Hipóteses para cinco anos</h3>
               <SliderRow
                 label="Variação populacional hipotética"
@@ -231,47 +221,47 @@ export default function ScenarioSimulation({
                 <><Sparkles size={17} /> Gerar projeção do sistema</>
               )}
             </button>
-          </div>
+          </aside>
 
-          <div className="space-y-4">
+          <section className="scenario-stage" aria-label="Projeção do cenário">
             {result ? (
               <>
-                <div className="panel">
+                <div className="projection-summary">
                   <p className="text-xs font-semibold text-warning uppercase tracking-wider mb-3">
                     Projeção · não é previsão
                   </p>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div>
+                  <div className="projection-numbers">
+                    <div className="observed-number">
                       <p className="text-xs text-slate-500">Observado</p>
                       <p className="text-2xl font-bold text-white">{result.original_score.toFixed(1)}</p>
                     </div>
-                    <div>
+                    <div className="delta-number">
                       <p className="text-xs text-slate-500">Variação projetada</p>
                       <p className="text-2xl font-bold text-warning flex justify-center items-center gap-1">
                         <DeltaIcon size={18} />
                         {result.delta > 0 ? '+' : ''}{result.delta.toFixed(1)}
                       </p>
                     </div>
-                    <div>
+                    <div className="projected-number">
                       <p className="text-xs text-slate-500">Projeção em 5 anos</p>
                       <p className="text-2xl font-bold text-accent">{result.projected_score.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="panel">
+                <div className="projection-chart">
                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
                     Trajetória calculada do índice
                   </h3>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={chartData} accessibilityLayer>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#363d39" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fill: '#a0afbd', fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} tick={{ fill: '#a0afbd', fontSize: 11 }} />
-                      <Tooltip contentStyle={{ background: '#272b29', border: '1px solid #65726a', borderRadius: 8, color: '#f2f4f3' }} labelStyle={{ color: '#f2f4f3' }} formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Índice']} />
-                      <ReferenceLine y={70} stroke="#73e2b4" strokeDasharray="4 4" strokeOpacity={0.4} />
-                      <Line type="monotone" dataKey="score" stroke="#73e2b4" strokeWidth={2.5} isAnimationActive={false} />
-                    </LineChart>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <AreaChart data={chartData} accessibilityLayer margin={{ top: 20, right: 14, left: -18, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 5" stroke="#d7ded9" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fill: '#58675e', fontSize: 12 }} axisLine={false} tickLine={false} tickMargin={14} />
+                      <YAxis domain={[0, 100]} tick={{ fill: '#58675e', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ background: '#fff', border: '1px solid #d7ded9', borderRadius: 8, color: '#192c23' }} labelStyle={{ color: '#192c23' }} formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Índice']} />
+                      <ReferenceLine y={70} stroke="#087b55" strokeDasharray="4 4" strokeOpacity={0.4} />
+                      <Area type="monotone" dataKey="score" stroke="#087b55" fill="#d8eee2" strokeWidth={3} isAnimationActive={false} dot={{ r: 4, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    </AreaChart>
                   </ResponsiveContainer>
                   <details className="chart-values">
                     <summary>Valores da projeção</summary>
@@ -283,7 +273,7 @@ export default function ScenarioSimulation({
                   </details>
                 </div>
 
-                <div className="panel space-y-3">
+                <div className="projection-reading">
                   <h3 className="text-xs font-semibold text-warning uppercase tracking-wider">
                     Premissas e metodologia
                   </h3>
@@ -291,21 +281,22 @@ export default function ScenarioSimulation({
                   {result.key_factors.map((factor) => (
                     <p key={factor} className="text-xs text-slate-400">• {factor}</p>
                   ))}
-                  <p className="text-xs text-slate-500">{result.methodology}</p>
+                  <DetailsSheet title="Premissas completas e metodologia"><p>{result.methodology}</p><dl className="assumption-list">{Object.entries(result.assumptions).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></DetailsSheet>
                   <p className="text-xs text-slate-500">
                     Dados-base coletados em {new Date(result.source_analysis_at).toLocaleString('pt-BR')}
                   </p>
                 </div>
               </>
             ) : (
-              <div className="simulation-empty panel">
+              <div className="scenario-awaiting">
                 <span className="icon-tile large"><ChartIcon size={30} /></span>
                 <span className="eyebrow">PROJEÇÃO DO SISTEMA</span>
                 <h2>Defina suas hipóteses.</h2>
                 <p>Nenhum resultado será fabricado se as fontes reais estiverem indisponíveis.</p>
+                <div className="baseline-reading"><span>Índice observado</span><strong>{analysisResult.opportunity_score.toFixed(1)}<small>/100</small></strong><span>Projeção ainda não calculada</span></div>
               </div>
             )}
-          </div>
+          </section>
         </div>
       )}
     </div>

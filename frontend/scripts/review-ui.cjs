@@ -4,7 +4,14 @@ const path = require('node:path')
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
 
 const baseURL = process.env.REVIEW_URL || 'http://127.0.0.1:3001'
-const destination = path.resolve('artifacts/ui-review')
+const destination = path.resolve('artifacts/deep-redesign')
+
+async function waitForMap(page, selector) {
+  await page.waitForFunction(selector => {
+    const tiles = [...document.querySelectorAll(selector + ' .leaflet-tile')]
+    return tiles.length > 0 && tiles.every(tile => tile.complete && tile.naturalWidth > 0 && Number(getComputedStyle(tile).opacity) > .99)
+  }, selector, { timeout: 20000 })
+}
 
 // Contract fixtures are confined to this browser test, never application data.
 const location = {
@@ -48,7 +55,7 @@ async function main() {
     await page.goto(baseURL)
     await page.getByRole('heading', { name: 'Explore oportunidades.' }).waitFor()
     await page.waitForFunction(() => document.querySelector('.brand-logo')?.complete)
-    await page.waitForFunction(() => [...document.querySelectorAll('.leaflet-tile')].some(tile => tile.complete && tile.naturalWidth > 0), { }, { timeout: 20000 }).catch(() => {})
+    await waitForMap(page, '.map-stage')
     await page.screenshot({ path: path.join(destination, 'desktop-real.png'), fullPage: true })
     const real = await page.evaluate(() => ({
       businessOptions: document.querySelectorAll('#analysis-business option').length - 1,
@@ -73,6 +80,8 @@ async function main() {
     await page.reload()
     await page.locator('.nav-item').nth(1).click()
     await page.getByRole('heading', { name: /Fa.a primeiro/ }).waitFor()
+    await waitForMap(page, '.simulation-page .required-map')
+    await page.screenshot({ path: path.join(destination, 'simulation-empty.png'), fullPage: true })
     await page.getByRole('button', { name: 'Ir para o mapa' }).click()
     const address = page.getByRole('combobox', { name: /Localiza/ })
     await address.fill('Avenida Paulista')
@@ -89,17 +98,38 @@ async function main() {
     await page.locator('#analysis-budget').fill('125000')
     await page.locator('.nav-item').nth(2).click()
     await page.getByRole('heading', { name: /O desafio come/ }).waitFor()
+    await waitForMap(page, '.investor-page .required-map')
+    await page.screenshot({ path: path.join(destination, 'investor-empty.png'), fullPage: true })
     await page.locator('.nav-item').nth(0).click()
     assert.equal(await page.locator('#analysis-budget').inputValue(), '125000')
     assert.equal(await address.inputValue(), location.address)
     await page.getByRole('button', { name: 'Analisar dados reais' }).click()
     await page.locator('.result-panel').waitFor()
-    await page.waitForFunction(() => document.querySelectorAll('.custom-marker').length === 2)
-    await page.locator('.leaflet-marker-icon').first().click()
-    await page.locator('.leaflet-popup-content').waitFor()
-    await page.locator('.leaflet-popup-close-button').click()
-    await page.locator('.leaflet-control-zoom-in').click()
+    await page.waitForFunction(() => document.querySelectorAll('.map-stage .custom-marker').length === 2)
+    await page.locator('.map-stage .leaflet-marker-icon').first().click()
+    await page.locator('.map-stage .leaflet-popup-content').waitFor()
+    await page.locator('.map-stage .leaflet-popup-close-button').click()
+    await page.locator('.map-stage .leaflet-control-zoom-in').click()
     assert.equal(await page.locator('.metric-item').count(), 6)
+    await page.getByRole('button', { name: 'Fontes e metodologia', exact: true }).click()
+    await page.getByRole('dialog').waitFor()
+    await page.getByRole('link', { name: /OpenStreetMap.*ok/ }).waitFor()
+    await page.keyboard.press('Escape')
+    await page.getByRole('dialog').waitFor({ state: 'hidden' })
+    assert.equal(await page.getByRole('dialog').count(), 0)
+    assert.equal(await page.getByRole('button', { name: 'Fontes e metodologia', exact: true }).evaluate(element => element === document.activeElement), true)
+    await page.locator('.inspector-scroll').evaluate(element => { element.scrollTop = 0 })
+    await page.getByRole('button', { name: 'Recolher painel' }).click()
+    await page.locator('#territory-inspector').waitFor({ state: 'hidden' })
+    await page.getByRole('button', { name: 'Abrir consulta' }).click()
+    await page.locator('#territory-inspector').waitFor()
+    assert.equal(await page.locator('.result-panel').isVisible(), true)
+    const legendUncovered = await page.locator('.map-legend').evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return element.contains(document.elementFromPoint(rect.left + 5, rect.top + 5))
+    })
+    assert.equal(legendUncovered, true, 'Map tiles must not cover the map legend')
+    await waitForMap(page, '.map-stage')
     await page.screenshot({ path: path.join(destination, 'analysis-desktop.png'), fullPage: true })
     assert.deepEqual(calls.find(call => call.path.endsWith('/analyze-with-ai')).body, {
       address: location.address, business_type: 'cafeteria', lat: location.lat, lng: location.lng, budget: 125000,
@@ -115,6 +145,7 @@ async function main() {
     await page.locator('.nav-item').nth(2).click()
     await page.getByRole('button', { name: 'Calcular pontuação educacional' }).click()
     await page.getByRole('heading', { name: 'Resultado educacional' }).waitFor()
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.investor-result')).opacity) > .99)
     assert.equal(await page.getByRole('meter').count(), 3)
     await page.screenshot({ path: path.join(destination, 'investor-desktop.png'), fullPage: true })
     await page.locator('.nav-item').nth(1).click()
@@ -126,7 +157,7 @@ async function main() {
       await page.setViewportSize({ width, height: 900 })
       for (let tab = 0; tab < 3; tab++) {
         await page.locator('.nav-item').nth(tab).click()
-        if (tab === 1) await page.waitForFunction(() => document.querySelector('.recharts-line-curve')?.getBBox().width > 100)
+        if (tab === 1) await page.waitForFunction(() => document.querySelector('.recharts-area-curve')?.getBBox().width > 100)
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
         assert.equal(overflow, false, `Horizontal overflow: ${width}px, tab ${tab}`)
         layouts.push({ width, tab, overflow })
