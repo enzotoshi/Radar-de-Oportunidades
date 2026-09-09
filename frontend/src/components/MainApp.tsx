@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import radarLogo from '../../public/logo-radar.png'
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
+import { motion, MotionConfig } from 'framer-motion'
+import { useReducedMotion } from '@/lib/useReducedMotion'
+import { uiSpring, gentleFade } from '@/lib/motion'
 import { Map, LineChart, Briefcase, MapPin, ArrowUpRight } from 'lucide-react'
 import MapAnalysis from './MapAnalysis'
 import ScenarioSimulation from './ScenarioSimulation'
@@ -35,6 +37,13 @@ function BrandIdentity() {
 
 export default function MainApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('map')
+  const [visited, setVisited] = useState<ActiveTab[]>(['map'])
+  const reducedMotion = useReducedMotion()
+  const navigate = (tab: ActiveTab, focusContent = false) => {
+    setVisited((previous) => previous.includes(tab) ? previous : [...previous, tab])
+    setActiveTab(tab)
+    if (focusContent) requestAnimationFrame(() => document.getElementById('conteudo')?.focus({ preventScroll: true }))
+  }
   const [selectedRegion, setSelectedRegion] = useState<string>('')
   const [selectedBusiness, setSelectedBusiness] = useState<string>('')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
@@ -46,7 +55,7 @@ export default function MainApp() {
   }, [activeTab])
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'} transition={reducedMotion ? gentleFade : uiSpring}>
       <div className="app-shell">
         <a href="#conteudo" className="skip-link">
           Pular para o conteúdo
@@ -55,7 +64,7 @@ export default function MainApp() {
           <div className="header-inner">
             <button
               className="brand"
-              onClick={() => setActiveTab('map')}
+              onClick={() => navigate('map')}
               aria-label="Radar de Oportunidades Inteligente — início"
             >
               <BrandIdentity />
@@ -64,10 +73,13 @@ export default function MainApp() {
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => setActiveTab(id)}
+                  onClick={() => navigate(id)}
                   aria-current={activeTab === id ? 'page' : undefined}
                   className={`nav-item ${activeTab === id ? 'is-active' : ''}`}
                 >
+                  {activeTab === id && (
+                    <motion.span className="nav-indicator" layoutId={reducedMotion ? undefined : 'navigation'} aria-hidden="true" />
+                  )}
                   <Icon size={18} aria-hidden="true" />
                   <span>{label}</span>
                 </button>
@@ -79,60 +91,61 @@ export default function MainApp() {
           </div>
         </header>
         <main id="conteudo" className="flex-1" tabIndex={-1}>
-          <AnimatePresence mode="wait">
-            {activeTab === 'map' && (
+          <div className="view-stack">
+            {visited.includes('map') && (
               <motion.div
                 key="map"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                hidden={activeTab !== 'map'}
+                initial={false}
+                animate={{ opacity: activeTab === 'map' ? 1 : 0 }}
+                transition={gentleFade}
                 className="h-full"
               >
                 <MapAnalysis
+                  active={activeTab === 'map'}
                   selectedRegion={selectedRegion}
                   setSelectedRegion={setSelectedRegion}
                   selectedBusiness={selectedBusiness}
                   setSelectedBusiness={setSelectedBusiness}
                   analysisResult={analysisResult}
                   setAnalysisResult={setAnalysisResult}
-                  onGoToInvestor={() => setActiveTab('gamification')}
+                  onGoToInvestor={() => navigate('gamification', true)}
                 />
               </motion.div>
             )}
 
-            {activeTab === 'simulation' && (
+            {visited.includes('simulation') && (
               <motion.div
                 key="simulation"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                hidden={activeTab !== 'simulation'}
+                initial={false}
+                animate={{ opacity: activeTab === 'simulation' ? 1 : 0 }}
+                transition={gentleFade}
               >
                 <ScenarioSimulation
                   analysisResult={analysisResult}
                   businessType={selectedBusiness}
-                  onGoToMap={() => setActiveTab('map')}
+                  onGoToMap={() => navigate('map', true)}
                 />
               </motion.div>
             )}
 
-            {activeTab === 'gamification' && (
+            {visited.includes('gamification') && (
               <motion.div
                 key="gamification"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+                hidden={activeTab !== 'gamification'}
+                initial={false}
+                animate={{ opacity: activeTab === 'gamification' ? 1 : 0 }}
+                transition={gentleFade}
               >
                 <InvestorMode
                   analysisResult={analysisResult}
                   businessType={selectedBusiness}
-                  onGoToMap={() => setActiveTab('map')}
+                  onGoToMap={() => navigate('map', true)}
                 />
               </motion.div>
             )}
-          </AnimatePresence>
+          </div>
         </main>
 
         <footer className="app-footer">

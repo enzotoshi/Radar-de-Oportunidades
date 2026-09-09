@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowUpRight,
   Briefcase,
@@ -11,7 +11,7 @@ import {
   Info,
   Loader2,
   MapPin,
-  Radar,
+  X,
   ScanLine,
   Search,
   SlidersHorizontal,
@@ -33,6 +33,7 @@ import type {
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
 interface Props {
+  active: boolean
   selectedRegion: string
   setSelectedRegion: (value: string) => void
   selectedBusiness: string
@@ -69,6 +70,7 @@ const kindLabels: Record<MetricDetail['kind'], string> = {
 }
 
 export default function MapAnalysis({
+  active,
   selectedRegion,
   setSelectedRegion,
   selectedBusiness,
@@ -87,6 +89,22 @@ export default function MapAnalysis({
   const [searchingAddress, setSearchingAddress] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const addressRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const [activeSuggestion, setActiveSuggestion] = useState(-1)
+
+  useEffect(() => {
+    setActiveSuggestion(-1)
+  }, [locations])
+
+  useEffect(() => {
+    if (locations.length === 0) return
+    const dismiss = (event: PointerEvent) => {
+      if (!suggestionsRef.current?.contains(event.target as Node)) setLocations([])
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [locations.length])
 
   useEffect(() => {
     getBusinesses()
@@ -132,6 +150,7 @@ export default function MapAnalysis({
     setSelectedRegion(location.display_name)
     setLocations([])
     setAnalysisResult(null)
+    addressRef.current?.focus()
   }
 
   const handleAnalyze = async () => {
@@ -184,8 +203,7 @@ export default function MapAnalysis({
             <span className="status-dot" /> DADOS PÚBLICOS PARA EMPREENDER
           </span>
           <h1 id="discovery-title">
-            O próximo grande negócio <br />
-            começa com uma <em>boa descoberta.</em>
+            Explore oportunidades.
           </h1>
           <p>
             Consulte registros públicos, entenda as limitações e complemente a
@@ -196,18 +214,6 @@ export default function MapAnalysis({
             <span><Database size={14} /> Fonte e referência</span>
             <span><Briefcase size={14} /> Métrica transparente</span>
           </div>
-        </div>
-        <div className="radar-art" aria-hidden="true">
-          <div className="radar-orbit orbit-outer" />
-          <div className="radar-orbit orbit-middle" />
-          <div className="radar-orbit orbit-inner" />
-          <div className="radar-axis axis-x" />
-          <div className="radar-axis axis-y" />
-          <div className="radar-sweep" />
-          <Radar className="radar-center" size={28} />
-          <span className="radar-point point-one" />
-          <span className="radar-point point-two" />
-          <span className="radar-caption">DADOS REAIS · MÉTRICAS IDENTIFICADAS</span>
         </div>
       </section>
 
@@ -223,7 +229,7 @@ export default function MapAnalysis({
 
       <div className="explore-grid">
         <div className="analysis-sidebar">
-          <div className="panel analysis-form space-y-5">
+          <div className="panel analysis-form space-y-5" aria-busy={analyzing}>
             <div className="panel-heading">
               <span className="icon-tile"><SlidersHorizontal size={19} /></span>
               <div>
@@ -232,19 +238,39 @@ export default function MapAnalysis({
               </div>
             </div>
 
-            <div>
+            <div className="address-field" ref={suggestionsRef}>
               <label htmlFor="analysis-address" className="field-label">
                 <span className="step-number">01</span> Localização
               </label>
               <div className="flex gap-2">
                 <input
+                  ref={addressRef}
                   id="analysis-address"
                   type="text"
                   value={customAddress}
                   onChange={(event) => handleAddressChange(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleLocationSearch()
+                    if (event.key === 'Escape') setLocations([])
+                    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && locations.length) {
+                      event.preventDefault()
+                      const next = event.key === 'ArrowDown'
+                        ? (activeSuggestion + 1) % locations.length
+                        : (activeSuggestion <= 0 ? locations.length - 1 : activeSuggestion - 1)
+                      setActiveSuggestion(next)
+                      document.getElementById('location-' + next)?.scrollIntoView({ block: 'nearest' })
+                    }
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      if (activeSuggestion >= 0 && locations[activeSuggestion]) chooseLocation(locations[activeSuggestion])
+                      else if (!searchingAddress) handleLocationSearch()
+                    }
                   }}
+                  role="combobox"
+                  aria-expanded={locations.length > 0}
+                  aria-controls={locations.length ? 'location-results' : undefined}
+                  aria-activedescendant={activeSuggestion >= 0 ? 'location-' + activeSuggestion : undefined}
+                  aria-autocomplete="list"
+                  aria-describedby="address-help"
                   placeholder="Rua, número, cidade e estado"
                   className="field-control"
                   autoComplete="off"
@@ -254,18 +280,25 @@ export default function MapAnalysis({
                   className="secondary-button"
                   onClick={handleLocationSearch}
                   disabled={searchingAddress}
+                  aria-label="Buscar localização"
+                  title="Buscar localização"
                 >
                   {searchingAddress ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                  Buscar
                 </button>
               </div>
-              <p className="field-help">
+              <p id="address-help" className="field-help">
                 Busca explícita via Nominatim. Selecione um resultado antes de analisar.
               </p>
+              <AnimatePresence>
               {locations.length > 0 && (
-                <div className="address-suggestions" aria-label="Resultados de localização">
-                  {locations.map((location) => (
+                <motion.div id="location-results" role="listbox" className="address-suggestions" aria-label="Resultados de localização"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}>
+                  {locations.map((location, index) => (
                     <button
+                      id={'location-' + index}
+                      role="option"
+                      aria-selected={activeSuggestion === index}
                       key={location.place_id + location.lat + location.lng}
                       type="button"
                       onClick={() => chooseLocation(location)}
@@ -282,8 +315,9 @@ export default function MapAnalysis({
                       </span>
                     </button>
                   ))}
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
               {selectedLocation && (
                 <p className="text-xs text-accent mt-2">
                   Localização selecionada
@@ -306,7 +340,7 @@ export default function MapAnalysis({
                   setAnalysisResult(null)
                 }}
                 disabled={loadingBusinesses || businesses.length === 0}
-                className="w-full bg-surface border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                className="field-control"
               >
                 <option value="">
                   {loadingBusinesses ? 'Carregando catálogo...' : 'Selecione um negócio...'}
@@ -353,13 +387,56 @@ export default function MapAnalysis({
             </button>
           </div>
 
-          <VoiceInput onResult={handleVoiceResult} />
+          <VoiceInput onResult={handleVoiceResult} active={active} />
+
+        </div>
+
+        <div className="map-column">
+          <section className="map-panel panel" aria-label="Mapa com dados observados">
+            <div className="map-toolbar">
+              <div>
+                <span className="icon-tile"><MapPin size={18} /></span>
+                <div>
+                  <h3>Mapa da consulta</h3>
+                  <p><span className="map-key business-key" /> Estabelecimentos OSM <span className="map-key location-key" /> Ponto analisado</p>
+                </div>
+              </div>
+              <span className="subtle-badge">OpenStreetMap</span>
+            </div>
+            <div className="map-canvas">
+              <MapComponent analysisResult={analysisResult} />
+            </div>
+            <div className="map-caption">
+              <Info size={14} />
+              <span>Ausência de marcador não comprova ausência de estabelecimento.</span>
+            </div>
+          </section>
+
+          <div className="discovery-notes">
+            <div>
+              <Database size={18} />
+              <h3>Fato, estimativa e cálculo</h3>
+              <p>Cada métrica identifica sua natureza, fonte e período de referência.</p>
+            </div>
+            <div>
+              <Briefcase size={18} />
+              <h3>Decisão responsável</h3>
+              <p>Use o radar como triagem e confirme custos e demanda antes de investir.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div aria-live="polite" role="status" className="sr-only">
+        {analyzing ? 'Consultando fontes públicas.' : analysisResult ? 'Análise concluída. Resultados disponíveis abaixo do mapa.' : ''}
+      </div>
 
           {analysisResult && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               className="panel result-panel space-y-4"
+              aria-label="Resultado da análise"
             >
               <div className="flex items-start justify-between gap-4 pb-3 border-b border-slate-700">
                 <div>
@@ -372,16 +449,18 @@ export default function MapAnalysis({
                 </div>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white"
+                  className="icon-button"
+                  aria-label="Limpar resultado da análise"
+                  title="Limpar resultado da análise"
                   onClick={() => setAnalysisResult(null)}
                 >
-                  Limpar
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="metrics-grid">
                 {Object.entries(analysisResult.metrics).map(([key, metric]) => (
-                  <div key={key} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div key={key} className="metric-item">
                     <p className="text-xs text-slate-400">{metric.label}</p>
                     <p className="text-sm font-semibold text-white mt-1">{formatMetric(metric)}</p>
                     <p className="text-[11px] text-accent mt-1">{kindLabels[metric.kind]}</p>
@@ -393,13 +472,13 @@ export default function MapAnalysis({
                 ))}
               </div>
 
-              <div className="p-3 bg-slate-800/50 rounded-lg">
+              <div className="result-detail">
                 <p className="text-xs font-semibold text-accent mb-1">Como interpretar</p>
                 <p className="text-sm text-slate-300">{analysisResult.explanation}</p>
                 <p className="text-sm text-white mt-2">{analysisResult.recommendation}</p>
               </div>
 
-              <div className="p-3 border border-slate-700 rounded-lg">
+              <div className="result-detail">
                 <p className="text-xs font-semibold text-accent mb-1">Metodologia própria</p>
                 <p className="text-xs text-slate-300">{analysisResult.methodology.formula}</p>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -435,43 +514,6 @@ export default function MapAnalysis({
               </button>
             </motion.div>
           )}
-        </div>
-
-        <div className="map-column">
-          <section className="map-panel panel" aria-label="Mapa com dados observados">
-            <div className="map-toolbar">
-              <div>
-                <span className="icon-tile"><MapPin size={18} /></span>
-                <div>
-                  <h3>Mapa da consulta</h3>
-                  <p>Azul: estabelecimentos OSM · verde: ponto analisado.</p>
-                </div>
-              </div>
-              <span className="subtle-badge">OpenStreetMap</span>
-            </div>
-            <div className="map-canvas">
-              <MapComponent analysisResult={analysisResult} />
-            </div>
-            <div className="map-caption">
-              <Info size={14} />
-              <span>Ausência de marcador não comprova ausência de estabelecimento.</span>
-            </div>
-          </section>
-
-          <div className="discovery-notes">
-            <div>
-              <span className="icon-tile"><Database size={20} /></span>
-              <h3>Fato, estimativa e cálculo</h3>
-              <p>Cada cartão identifica sua natureza, fonte e período de referência.</p>
-            </div>
-            <div>
-              <span className="icon-tile"><Briefcase size={20} /></span>
-              <h3>Decisão responsável</h3>
-              <p>Use o radar como triagem e confirme custos e demanda antes de investir.</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

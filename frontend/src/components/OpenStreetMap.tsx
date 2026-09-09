@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
+import { useReducedMotion } from '@/lib/useReducedMotion'
+import type { Map as LeafletMap, Marker } from 'leaflet'
 
 interface Props {
   center?: [number, number]
@@ -10,23 +12,12 @@ interface Props {
 }
 
 // One shared load also handles React Strict Mode mounting twice in development.
-let leafletLoad: Promise<any> | null = null
-function loadLeaflet(): Promise<any> {
-  const leafletWindow = window as Window & { L?: any }
-  if (leafletWindow.L) return Promise.resolve(leafletWindow.L)
+let leafletLoad: Promise<typeof import('leaflet')> | null = null
+function loadLeaflet() {
   if (!leafletLoad) {
-    leafletLoad = new Promise((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-      script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
-      script.crossOrigin = ''
-      script.onload = () => resolve(leafletWindow.L)
-      script.onerror = () => {
-        script.remove()
-        leafletLoad = null
-        reject(new Error('Mapa indisponível'))
-      }
-      document.head.appendChild(script)
+    leafletLoad = import('leaflet').catch((error) => {
+      leafletLoad = null
+      throw error
     })
   }
   return leafletLoad
@@ -37,10 +28,11 @@ export default function OpenStreetMap({
   zoom = 12,
   markers = [],
 }: Props) {
+  const reducedMotion = useReducedMotion()
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
-  const leafletRef = useRef<any>(null)
+  const mapInstanceRef = useRef<LeafletMap | null>(null)
+  const markersRef = useRef<Marker[]>([])
+  const leafletRef = useRef<typeof import('leaflet') | null>(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -79,8 +71,8 @@ export default function OpenStreetMap({
 
   useEffect(() => {
     if (ready && mapInstanceRef.current)
-      mapInstanceRef.current.setView(center, zoom)
-  }, [ready, center, zoom])
+      mapInstanceRef.current.setView(center, zoom, { animate: !reducedMotion })
+  }, [ready, center, zoom, reducedMotion])
 
   useEffect(() => {
     const map = mapInstanceRef.current
@@ -143,7 +135,7 @@ export default function OpenStreetMap({
             <>
               <Loader2 size={24} className="animate-spin text-accent" />
               <p className="text-sm">
-                Preparando seu território de possibilidades...
+                Carregando mapa...
               </p>
             </>
           )}

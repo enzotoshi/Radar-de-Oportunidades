@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 
 interface VoiceInputProps {
+  active?: boolean
   onResult: (
     transcript: string,
     entities: Record<string, string | null>
@@ -133,12 +134,14 @@ function extractEntitiesFromText(text: string): Record<string, string | null> {
   return entities
 }
 
-export default function VoiceInput({ onResult }: VoiceInputProps) {
+export default function VoiceInput({ onResult, active = true }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [supported, setSupported] = useState(true)
   const [statusMsg, setStatusMsg] = useState('Toque para falar')
   const recognitionRef = useRef<ISpeechRecognition | null>(null)
+  const onResultRef = useRef(onResult)
+  useEffect(() => { onResultRef.current = onResult }, [onResult])
 
   useEffect(() => {
     const SpeechRecognitionAPI =
@@ -168,7 +171,7 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
       setTranscript(final || interim)
       if (final) {
         const entities = extractEntitiesFromText(final)
-        onResult(final, entities)
+        onResultRef.current(final, entities)
         setStatusMsg('Analisado! Toque para falar novamente')
       }
     }
@@ -184,7 +187,22 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
     }
 
     recognitionRef.current = recognition
-  }, [onResult])
+    return () => {
+      recognition.onstart = null
+      recognition.onend = null
+      recognition.onerror = null
+      recognition.onresult = null
+      recognition.stop()
+      recognitionRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!active) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+    }
+  }, [active])
 
   const toggleListening = () => {
     if (!recognitionRef.current) return
@@ -200,7 +218,7 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
 
   if (!supported) {
     return (
-      <div className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-slate-700">
+      <div className="voice-panel flex items-center gap-3">
         <MicOff size={18} className="text-slate-500" />
         <span className="text-sm text-slate-500">
           Entrada de voz não suportada neste navegador
@@ -210,17 +228,14 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
   }
 
   return (
-    <div className="voice-panel flex items-center gap-3 p-4">
+    <div className="voice-panel flex items-center gap-3">
       {/* Mic button */}
       <button
         onClick={toggleListening}
         aria-pressed={isListening}
         aria-label={isListening ? 'Parar gravação' : 'Iniciar gravação de voz'}
-        className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg flex-shrink-0 ${
-          isListening
-            ? 'bg-red-500 pulse-ring'
-            : 'bg-accent hover:bg-accent-600 hover:scale-105 active:scale-95'
-        }`}
+        title={isListening ? 'Parar gravação' : 'Iniciar gravação de voz'}
+        className="voice-button"
       >
         {isListening ? (
           <Volume2 size={22} className="text-white" />
@@ -238,7 +253,7 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
           {statusMsg}
         </p>
         {transcript ? (
-          <p className="text-sm text-white truncate">
+          <p className="text-sm text-white break-words">
             &quot;{transcript}&quot;
           </p>
         ) : (

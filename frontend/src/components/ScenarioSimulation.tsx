@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import {
   CartesianGrid,
@@ -51,13 +51,16 @@ function SliderRow({
   format,
   onChange,
 }: SliderRowProps) {
+  const id = useId()
   return (
-    <div className="space-y-2">
+    <div className="slider-row">
       <div className="flex justify-between items-center gap-3">
-        <label className="text-sm font-medium text-slate-300">{label}</label>
-        <span className="text-sm font-bold text-accent">{format(value)}</span>
+        <label htmlFor={id} className="text-sm font-medium text-slate-300">{label}</label>
+        <output htmlFor={id} className="text-sm font-bold text-accent">{format(value)}</output>
       </div>
       <input
+        id={id}
+        style={{ '--range-fill': `${((value - min) / (max - min)) * 100}%` } as CSSProperties}
         type="range"
         min={min}
         max={max}
@@ -66,6 +69,7 @@ function SliderRow({
         onChange={(event) => onChange(Number(event.target.value))}
         className="w-full"
         aria-label={label}
+        aria-valuetext={format(value)}
       />
       <div className="flex justify-between text-xs text-slate-500">
         <span>{format(min)}</span>
@@ -86,9 +90,18 @@ export default function ScenarioSimulation({
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestVersion = useRef(0)
+
+  useEffect(() => {
+    requestVersion.current += 1
+    setLoading(false)
+    setResult(null)
+    setError(null)
+  }, [analysisResult, businessType])
 
   const handleSimulate = async () => {
     if (!analysisResult || !businessType) return
+    const version = ++requestVersion.current
     setLoading(true)
     setError(null)
     setResult(null)
@@ -102,8 +115,9 @@ export default function ScenarioSimulation({
         income_growth: incomeGrowth,
         new_competitors: newCompetitors,
       })
-      setResult(response)
+      if (version === requestVersion.current) setResult(response)
     } catch (reason) {
+      if (version !== requestVersion.current) return
       setError(
         getApiError(
           reason,
@@ -111,7 +125,7 @@ export default function ScenarioSimulation({
         ),
       )
     } finally {
-      setLoading(false)
+      if (version === requestVersion.current) setLoading(false)
     }
   }
 
@@ -135,7 +149,7 @@ export default function ScenarioSimulation({
         animate={{ opacity: 1, y: 0 }}
       >
         <span className="eyebrow"><ChartIcon size={15} /> SIMULAÇÃO EXPLÍCITA</span>
-        <h1>Teste hipóteses.<br /><em>Sem confundir projeção com fato.</em></h1>
+        <h1>Simule cenários.</h1>
         <p>
           O ponto de partida vem da última consulta real. As mudanças abaixo são
           hipóteses suas e não previsões econômicas.
@@ -250,15 +264,23 @@ export default function ScenarioSimulation({
                     Trajetória calculada do índice
                   </h3>
                   <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#263541" />
+                    <LineChart data={chartData} accessibilityLayer>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#363d39" vertical={false} />
                       <XAxis dataKey="label" tick={{ fill: '#a0afbd', fontSize: 11 }} />
                       <YAxis domain={[0, 100]} tick={{ fill: '#a0afbd', fontSize: 11 }} />
-                      <Tooltip />
+                      <Tooltip contentStyle={{ background: '#272b29', border: '1px solid #65726a', borderRadius: 8, color: '#f2f4f3' }} labelStyle={{ color: '#f2f4f3' }} formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Índice']} />
                       <ReferenceLine y={70} stroke="#73e2b4" strokeDasharray="4 4" strokeOpacity={0.4} />
-                      <Line type="monotone" dataKey="score" stroke="#73e2b4" strokeWidth={2.5} />
+                      <Line type="monotone" dataKey="score" stroke="#73e2b4" strokeWidth={2.5} isAnimationActive={false} />
                     </LineChart>
                   </ResponsiveContainer>
+                  <details className="chart-values">
+                    <summary>Valores da projeção</summary>
+                    <table>
+                      <caption className="sr-only">Índice observado e projeções por ano</caption>
+                      <thead><tr><th scope="col">Ano</th><th scope="col">Índice</th></tr></thead>
+                      <tbody>{chartData.map((point) => <tr key={point.year}><th scope="row">{point.label}</th><td>{point.score.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</td></tr>)}</tbody>
+                    </table>
+                  </details>
                 </div>
 
                 <div className="panel space-y-3">

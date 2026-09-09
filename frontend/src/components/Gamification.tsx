@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 import {
   ArrowLeft,
   Briefcase,
@@ -59,18 +60,19 @@ function ScoreBar({
   max: number
   color: string
 }) {
+  const reducedMotion = useReducedMotion()
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="text-slate-400">{label}</span>
         <span className="font-bold text-white">{value} pts</span>
       </div>
-      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="score-track" role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max}>
         <motion.div
-          className="h-full rounded-full"
+          className="score-fill"
           style={{ backgroundColor: color }}
-          initial={{ width: 0 }}
-          animate={{ width: (value / max) * 100 + '%' }}
+          initial={reducedMotion ? false : { scaleX: 0 }}
+          animate={{ scaleX: value / max }}
         />
       </div>
     </div>
@@ -82,14 +84,19 @@ export default function Gamification({
   businessType,
   onGoToMap,
 }: Props) {
+  const reducedMotion = useReducedMotion()
   const [phase, setPhase] = useState<Phase>('intro')
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const confettiShown = useRef(false)
+  const requestVersion = useRef(0)
 
   useEffect(() => {
+    requestVersion.current += 1
+    setLoading(false)
+    setShowConfetti(false)
     setPhase('intro')
     setGameResult(null)
     setError(null)
@@ -112,6 +119,7 @@ export default function Gamification({
 
   const handleEvaluate = async () => {
     if (!analysisResult || !businessType) return
+    const version = ++requestVersion.current
     setLoading(true)
     setError(null)
     try {
@@ -119,9 +127,11 @@ export default function Gamification({
         analysisResult.location,
         businessType,
       )
+      if (version !== requestVersion.current) return
       setGameResult(response)
       setPhase('result')
     } catch (reason) {
+      if (version !== requestVersion.current) return
       setError(
         getApiError(
           reason,
@@ -129,16 +139,20 @@ export default function Gamification({
         ),
       )
     } finally {
-      setLoading(false)
+      if (version === requestVersion.current) setLoading(false)
     }
   }
 
   if (!analysisResult) {
     return (
       <div className="page-container investor-page">
+        <div className="page-heading">
+          <span className="eyebrow"><Briefcase size={15} /> MODO INVESTIDOR EDUCACIONAL</span>
+          <h1>Leia os sinais. Questione os limites.</h1>
+        </div>
         <div className="panel simulation-empty">
           <span className="icon-tile large"><Database size={28} /></span>
-          <h1>O desafio começa com dados reais.</h1>
+          <h2>O desafio começa com dados reais.</h2>
           <p>
             Faça uma análise no mapa. O modo investidor não cria bairros,
             rendas, custos ou tendências de reserva.
@@ -153,8 +167,7 @@ export default function Gamification({
 
   return (
     <div className="page-container investor-page">
-      {showConfetti && <Confetti />}
-      <AnimatePresence mode="wait">
+      {showConfetti && !reducedMotion && <Confetti />}
         {phase === 'intro' && (
           <motion.div
             key="intro"
@@ -187,7 +200,7 @@ export default function Gamification({
                   </p>
                 )}
               </div>
-              <div className="bg-gradient-to-br from-accent/20 to-primary-700/20 rounded-2xl p-5 border border-accent/30">
+              <div className="score-summary">
                 <p className="text-xs text-slate-400">Índice-base da metodologia própria</p>
                 <p className="text-4xl font-black text-accent">
                   {analysisResult.opportunity_score.toFixed(1)}
@@ -216,17 +229,17 @@ export default function Gamification({
             key="result"
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-lg mx-auto space-y-5"
+            className="investor-result space-y-5"
           >
             <div className="text-center">
-              <p className="text-4xl mb-2">🎯</p>
+              <Target size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />
               <h1 className="text-2xl font-black text-white">{gameResult.classification}</h1>
               <p className="text-slate-400 text-sm mt-1">
                 Pontuação própria, educacional e derivada de dados OSM
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-accent/20 to-primary-700/20 rounded-2xl p-6 border border-accent/30 text-center">
+            <div className="score-summary text-center" role="status">
               <p className="text-xs text-slate-400 uppercase tracking-wider">Pontuação educacional</p>
               <p className="text-6xl font-black text-accent">{gameResult.total_score}</p>
               <p className="text-slate-400 text-xs">de 1000 pontos · não é indicador oficial</p>
@@ -238,7 +251,7 @@ export default function Gamification({
               </h3>
               <ScoreBar label="Concorrência mapeada" value={gameResult.competition_component} max={400} color="#00d4aa" />
               <ScoreBar label="Infraestrutura mapeada" value={gameResult.infrastructure_component} max={300} color="#f59e0b" />
-              <ScoreBar label="Mobilidade mapeada" value={gameResult.mobility_component} max={300} color="#8b5cf6" />
+              <ScoreBar label="Mobilidade mapeada" value={gameResult.mobility_component} max={300} color="#68a9ff" />
             </div>
 
             <div className="panel space-y-2">
@@ -268,7 +281,6 @@ export default function Gamification({
             </button>
           </motion.div>
         )}
-      </AnimatePresence>
     </div>
   )
 }

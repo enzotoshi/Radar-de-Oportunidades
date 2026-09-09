@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { AnalysisResult } from '@/types'
 
@@ -21,7 +21,7 @@ export default function MapComponent({ analysisResult }: MapComponentProps) {
     }
   }, [analysisResult])
 
-  const markers = analysisResult
+  const markers = useMemo(() => analysisResult
     ? [
         {
           position: [analysisResult.location.lat, analysisResult.location.lng] as [number, number],
@@ -34,7 +34,7 @@ export default function MapComponent({ analysisResult }: MapComponentProps) {
           color: '#3b82f6',
         })),
       ]
-    : []
+    : [], [analysisResult])
 
   return (
     <div className="w-full h-full">

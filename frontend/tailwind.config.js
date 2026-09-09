@@ -35,19 +35,19 @@ module.exports = {
           900: '#005e4a',
         },
         warning: {
-          DEFAULT: '#f59e0b',
+          DEFAULT: '#f6c66b',
           light: '#fef3c7',
           dark: '#d97706',
         },
         danger: '#ef4444',
         surface: {
-          DEFAULT: '#0b1219',
-          card: '#131e28',
-          elevated: '#20303d',
+          DEFAULT: 'var(--color-bg)',
+          card: 'var(--color-surface)',
+          elevated: 'var(--color-elevated)',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
