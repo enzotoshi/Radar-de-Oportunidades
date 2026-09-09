@@ -1,0 +1,73 @@
+:root {
+  --primitive-petrol-950: #0b2930;
+  --primitive-petrol-900: #10363d;
+  --primitive-petrol-800: #17464d;
+  --primitive-teal-700: #087f78;
+  --primitive-teal-800: #066861;
+  --primitive-teal-100: #d8f0ec;
+  --primitive-blue-700: #176b9a;
+  --primitive-blue-100: #dcecf5;
+  --primitive-mist-50: #f4f8f7;
+  --primitive-mist-100: #e9f0ee;
+  --primitive-white: #ffffff;
+  --primitive-ink-900: #102d32;
+  --primitive-ink-600: #50666a;
+  --primitive-ink-400: #71868a;
+  --primitive-amber-700: #a75f00;
+  --primitive-amber-100: #fff0d6;
+  --primitive-red-700: #b43b32;
+  --primitive-red-100: #fde8e5;
+
+  --color-structure: var(--primitive-petrol-950);
+  --color-structure-subtle: var(--primitive-petrol-900);
+  --color-action: var(--primitive-teal-700);
+  --color-action-hover: var(--primitive-teal-800);
+  --color-action-soft: var(--primitive-teal-100);
+  --color-data: var(--primitive-blue-700);
+  --color-data-soft: var(--primitive-blue-100);
+  --color-canvas: var(--primitive-mist-50);
+  --color-surface: var(--primitive-white);
+  --color-surface-muted: var(--primitive-mist-100);
+  --color-ink: var(--primitive-ink-900);
+  --color-ink-muted: var(--primitive-ink-600);
+  --color-border: #cad8d5;
+  --color-border-strong: #9fb4b2;
+  --color-warning: var(--primitive-amber-700);
+  --color-warning-soft: var(--primitive-amber-100);
+  --color-danger: var(--primitive-red-700);
+  --color-danger-soft: var(--primitive-red-100);
+
+  --text-display: clamp(2.5rem, 4vw, 3.25rem);
+  --text-h1: clamp(1.875rem, 3vw, 2.375rem);
+  --text-h2: clamp(1.4375rem, 2vw, 1.75rem);
+  --text-h3: 1.125rem;
+  --text-body-lg: 1.0625rem;
+  --text-body: 1rem;
+  --text-body-sm: .875rem;
+  --text-caption: .75rem;
+
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius-control: .5rem;
+  --radius-panel: .75rem;
+  --radius-large: 1rem;
+  --radius-pill: 999px;
+  --control-height: 2.75rem;
+  --header-height: 4.5rem;
+  --content-max: 112rem;
+  --shadow-panel: 0 12px 36px rgba(11, 41, 48, .1);
+  --shadow-overlay: 0 18px 56px rgba(11, 41, 48, .18);
+  --motion-instant: 100ms;
+  --motion-fast: 180ms;
+  --motion-base: 260ms;
+  --ease-standard: cubic-bezier(.2, .7, .2, 1);
+}
