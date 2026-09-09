@@ -1,56 +1,80 @@
-export interface AgeDistribution {
-  young: number
-  adult: number
-  senior: number
-}
-
-export interface Region {
-  id: string
-  name: string
-  lat: number
-  lng: number
-  population_density: number
-  avg_income: number
-  age_distribution: AgeDistribution
-  competition_density: number
-  urban_flow: number
-  consumption_trend: number
-  description: string
-  highlights: string[]
-}
-
 export interface Business {
   id: string
   name: string
   icon: string
   sector: string
-  min_investment: number
-  ideal_income: number
-  ideal_age: 'young' | 'adult' | 'mixed'
-  competition_sensitivity: number
-  description: string
 }
+
+export interface Municipality {
+  ibge_code: string
+  name: string
+  state?: string | null
+}
+
+export interface Location {
+  address: string
+  lat: number
+  lng: number
+  municipality?: Municipality | null
+}
+
+export type DataKind = 'real' | 'estimated' | 'calculated'
 
 export interface MetricDetail {
-  value: number
+  value: number | string | null
   label: string
   description: string
+  kind: DataKind
+  source: string
+  reference?: string | null
+  unit?: string | null
 }
 
-export interface SimilarRegion {
+export interface DataSource {
   name: string
-  score: number
-  similarity: number
+  url: string
+  status: 'ok' | 'partial' | 'unavailable'
+  reference?: string | null
+  license?: string | null
+}
+
+export interface BusinessMarker {
+  id: string
+  name: string
+  category: string
+  lat: number
+  lng: number
+  address?: string | null
+}
+
+export interface ScoreMethodology {
+  formula: string
+  competition: string
+  infrastructure: string
+  mobility: string
+  components: {
+    overall: number
+    competition: number
+    infrastructure: number
+    mobility: number
+  }
 }
 
 export interface AnalysisResult {
   opportunity_score: number
+  score_label: string
   metrics: Record<string, MetricDetail>
   explanation: string
-  similar_regions: SimilarRegion[]
+  classification: string
   recommendation: string
-  risk_level: 'low' | 'medium' | 'high'
-  estimated_roi: string
+  location: Location
+  business_type: string
+  radius_meters: number
+  business_markers: BusinessMarker[]
+  sources: DataSource[]
+  collected_at: string
+  methodology: ScoreMethodology
+  warnings: string[]
 }
 
 export interface YearProjection {
@@ -60,9 +84,11 @@ export interface YearProjection {
 }
 
 export interface ScenarioParams {
-  region: string
+  address: string
   business_type: string
-  budget: number
+  lat: number
+  lng: number
+  budget?: number
   population_growth: number
   income_growth: number
   new_competitors: number
@@ -75,76 +101,30 @@ export interface SimulationResult {
   projections: YearProjection[]
   explanation: string
   key_factors: string[]
+  assumptions: Record<string, string | number>
+  methodology: string
+  source_analysis_at: string
 }
 
 export interface GameResult {
   total_score: number
-  success_potential: number
-  risk_management: number
-  market_timing: number
+  competition_component: number
+  infrastructure_component: number
+  mobility_component: number
   classification: string
   feedback: string
   tips: string[]
+  methodology: string
+  source_analysis_at: string
+}
+
+export interface AddressSuggestion {
+  place_id: string
+  display_name: string
+  lat: number
+  lng: number
+  municipality?: Municipality | null
+  source: string
 }
 
 export type ActiveTab = 'map' | 'simulation' | 'gamification'
-
-// ── AI Hotspot Finder Types ──
-
-export interface Competition {
-  total_competitors: number
-  density_per_km2: number
-  average_rating: number
-  total_reviews: number
-  currently_open: number
-  competition_level: string
-  top_competitors?: {
-    name: string
-    rating: number
-    reviews: number
-    address: string
-  }[]
-}
-
-export interface Infrastructure {
-  total_facilities: number
-  by_type: Record<string, { label: string; count: number }>
-  infrastructure_score: number
-}
-
-export interface Mobility {
-  total_transport_options: number
-  by_type: Record<string, { label: string; count: number }>
-  mobility_score: number
-}
-
-export interface Attractiveness {
-  overall_score: number
-  competition_score: number
-  infrastructure_score: number
-  mobility_score: number
-  classification: string
-}
-
-export interface Hotspot {
-  name: string
-  lat: number
-  lng: number
-  opportunity_score: number
-  competition: Competition
-  infrastructure: Infrastructure
-  mobility: Mobility
-  attractiveness: Attractiveness
-  data_source: string
-}
-
-export interface HotspotAnalysis extends Hotspot {
-  recommendations: string[]
-}
-
-export interface HotspotsResponse {
-  city: string
-  business_type: string
-  total_found: number
-  hotspots: Hotspot[]
-}
