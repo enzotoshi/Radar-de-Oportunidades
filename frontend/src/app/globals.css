@@ -452,7 +452,7 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .territory-heading p { margin-top: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-body-sm); }
 .section-kicker { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-action); font-size: var(--text-caption); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
 .atlas-workspace { min-height: calc(100svh - var(--header-height) - 7.5rem); display: grid; grid-template-columns: 20rem minmax(24rem, 1fr) 24rem; align-items: stretch; background: var(--color-surface); border-block: 1px solid var(--color-border); }
-.atlas-query { position: relative; z-index: 20; min-width: 0; padding: var(--space-6); display: flex; flex-direction: column; background: var(--color-surface); border-right: 1px solid var(--color-border); }
+.atlas-query { position: relative; z-index: 20; min-width: 0; max-height: 42rem; padding: var(--space-6); display: flex; flex-direction: column; background: var(--color-surface); border-right: 1px solid var(--color-border); overflow-y: auto; align-self: start; }
 .query-header { padding-bottom: var(--space-6); border-bottom: 1px solid var(--color-border); }
 .query-header h2 { margin-top: var(--space-3); font-size: 1.5rem; }
 .query-header p { margin-top: var(--space-3); color: var(--color-ink-muted); font-size: var(--text-body-sm); }
@@ -516,14 +516,14 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .map-marker--analysis { background: var(--color-action); }
 .custom-marker { background: transparent !important; border: 0 !important; }
 .map-marker--business { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; border-radius: 0; box-shadow: none; font-size: 26px; line-height: 1; }
-.analysis-guide { min-width: 0; padding: var(--space-8) var(--space-6); background: var(--color-structure); color: #d7e5e4; border-left: 1px solid rgba(255,255,255,.12); }
+.analysis-guide { min-width: 0; max-height: 42rem; padding: var(--space-8) var(--space-6); background: var(--color-structure); color: #d7e5e4; border-left: 1px solid rgba(255,255,255,.12); overflow-y: auto; align-self: start; }
 .analysis-guide .section-kicker { color: #8fe3d9; }
 .analysis-guide h2 { margin-top: var(--space-3); color: white; }
 .analysis-guide ol { margin: var(--space-8) 0; padding: 0; display: grid; gap: var(--space-5); list-style: none; }
 .analysis-guide li { display: grid; grid-template-columns: 2rem 1fr; gap: var(--space-3); align-items: start; }
 .analysis-guide li strong { width: 2rem; height: 2rem; display: grid; place-items: center; color: var(--color-structure); background: white; border-radius: 50%; font-size: var(--text-caption); }
 .analysis-guide > p { color: #b8cfcd; font-size: var(--text-body-sm); }
-#analysis-insights { min-width: 0; }
+#analysis-insights { min-width: 0; max-height: 42rem; align-self: start; }
 .analysis-insights { height: 100%; min-width: 0; padding: var(--space-6); overflow-y: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); }
 .insights-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
 .score-lockup { margin-top: var(--space-2); display: flex; align-items: baseline; color: var(--color-action); font-variant-numeric: tabular-nums; }
@@ -555,14 +555,14 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 @media (max-width: 1439px) {
   .atlas-workspace { grid-template-columns: 20rem minmax(0, 1fr); }
   .analysis-guide { display: none; }
-  #analysis-insights { position: fixed; z-index: 55; inset: var(--header-height) 0 0 auto; width: min(25rem, 100%); box-shadow: var(--shadow-overlay); }
-  .analysis-insights { border-left: 1px solid var(--color-border-strong); }
+  #analysis-insights { position: fixed; z-index: 55; inset: var(--header-height) 0 0 auto; width: min(25rem, 100%); max-height: calc(100vh - var(--header-height)); box-shadow: var(--shadow-overlay); }
+  .analysis-insights { height: 100%; border-left: 1px solid var(--color-border-strong); }
   .insights-toggle { display: inline-flex; }
 }
 @media (max-width: 1023px) {
   .territory-heading { min-height: auto; padding: var(--space-5) var(--space-6); align-items: center; }
   .atlas-workspace { display: flex; flex-direction: column; }
-  .atlas-query { order: 1; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .atlas-query { order: 1; max-height: none; border-right: 0; border-bottom: 1px solid var(--color-border); }
   .atlas-map { order: 2; min-height: 48svh; max-height: 48svh; height: 48svh; }
   .query-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
   .query-fields > :first-child, .query-fields > .inline-alert, .query-fields > .voice-panel { grid-column: 1 / -1; }
@@ -572,14 +572,14 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
   .territory-heading { padding: var(--space-4); align-items: flex-start; }
   .territory-heading p { display: none; }
   .territory-heading .button span { display: none; }
-  .atlas-query { padding: var(--space-5) var(--space-4); }
+  .atlas-query { padding: var(--space-5) var(--space-4); max-height: none; }
   .query-header h2 { font-size: 1.35rem; }
   .query-fields { display: flex; }
   .field-control { font-size: 1rem; }
   .icon-button { width: 44px; min-width: 44px; min-height: 44px; }
   .address-control { grid-template-columns: minmax(0, 1fr) 44px; }
   .atlas-map { min-height: 48svh; max-height: 48svh; height: 48svh; }
-  #analysis-insights { position: static; order: 3; width: auto; box-shadow: none; }
+  #analysis-insights { position: static; order: 3; width: auto; max-height: none; box-shadow: none; }
   .analysis-insights { overflow: visible; border-left: 0; border-top: 1px solid var(--color-border); }
   .insights-header { position: relative; display: block; padding-right: 52px; }
   .insights-header > .icon-button { position: absolute; top: 0; right: 0; }
