@@ -62,7 +62,7 @@ input[type='number'], output, .report-score, .projection-numbers, .score-summary
 .brand-logo { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
 .brand-name { display: block; min-width: 0; }
 .brand-name strong { display: block; font-size: 1.75rem; font-weight: 650; line-height: 1.15; }
-.brand-name > span { display: block; font-size: .5625rem; line-height: 1.5; margin-top: .25rem; color: #bdd3c6; }
+.brand-name > span { display: block; font-size: .75rem; line-height: 1.5; margin-top: .25rem; color: #bdd3c6; }
 .nav-section-label { margin: 3rem .875rem .75rem; font-size: .625rem; font-weight: 600; color: var(--rail-muted); }
 .app-nav { display: flex; flex-direction: column; gap: .375rem; }
 .nav-item { display: flex; align-items: center; position: relative; isolation: isolate; gap: .625rem; padding: .875rem .75rem; border-radius: .375rem; min-height: 3rem; font-size: .8125rem; font-weight: 550; color: #bbd0c2; text-align: left; }
@@ -71,7 +71,7 @@ input[type='number'], output, .report-score, .projection-numbers, .score-summary
 .nav-item.is-active .nav-arrow { opacity: 1; }
 .nav-indicator { position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: #345044; box-shadow: inset 3px 0 #8fe3b2; }
 .rail-context { margin: auto .75rem 1.75rem; padding-top: 2rem; }
-.rail-context .eyebrow { color: var(--rail-muted); font-size: .5625rem; }
+.rail-context .eyebrow { color: var(--rail-muted); font-size: .75rem; }
 .rail-context > svg { margin-top: 1rem; color: #9adcba; }
 .rail-context p { font-size: .8125rem; margin-top: .75rem; line-height: 1.6; }
 .rail-context > span:last-child { display: block; font-size: .6875rem; color: var(--rail-muted); margin-top: .375rem; }
@@ -327,7 +327,7 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
   .app-header .brand-name { display: block; }
   .brand-logo { width: 34px; height: 34px; }
   .brand-name strong { font-size: 1.25rem; }
-  .brand-name > span { font-size: .5rem; margin-top: 0; }
+  .brand-name > span { font-size: .75rem; margin-top: 0; }
   .app-nav { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row; margin: 0; padding: .5rem .75rem max(.5rem, env(safe-area-inset-bottom)); background: #173329f5; backdrop-filter: blur(20px); box-shadow: 0 -4px 20px #12342616; z-index: 100; }
   .nav-item { flex: 1; min-width: 0; flex-direction: column; padding: .5rem .25rem; gap: .375rem; font-size: .625rem; text-align: center; }
   .nav-item > span:not(.nav-indicator) { display: block; }
@@ -343,7 +343,7 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
   .territory-inspector { border-left: 0; border-top: 1px solid var(--border); }
   .inspector-scroll { overflow: visible; padding: 1.5rem; }
   .inspector-tabs { position: sticky; top: 0; background: var(--material); backdrop-filter: blur(20px); z-index: 25; }
-  .map-legend { gap: .5rem; left: .75rem; max-width: calc(100% - 1.5rem); font-size: .5625rem; bottom: 5.75rem; }
+  .map-legend { gap: .5rem; left: .75rem; max-width: calc(100% - 1.5rem); font-size: .75rem; bottom: 5.75rem; }
   .map-context { left: .75rem; right: .75rem; bottom: 1.75rem; }
   .territory-label { left: .75rem; top: .75rem; }
   .territory-label small { display: none; }
