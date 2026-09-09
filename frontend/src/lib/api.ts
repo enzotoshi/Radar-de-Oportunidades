@@ -1,32 +1,67 @@
 import axios from 'axios'
 import type {
+  AddressSuggestion,
   AnalysisResult,
-  SimulationResult,
-  GameResult,
-  Region,
   Business,
+  GameResult,
+  Location,
   ScenarioParams,
+  SimulationResult,
 } from '@/types'
 
-// Em produção, usa a URL do backend deployado no Render
-// Em desenvolvimento local, usa localhost
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 60000, // 60 segundos para AI Hotspots que demora mais
+  timeout: 60_000,
+  headers: { 'Content-Type': 'application/json' },
 })
 
-export async function analyzeOpportunity(
-  region: string,
-  businessType: string,
-  budget: number
-): Promise<AnalysisResult> {
-  const { data } = await api.post<AnalysisResult>('/api/analyze', {
-    region,
-    business_type: businessType,
-    budget,
+let businessesPromise: Promise<Business[]> | null = null
+
+export function getApiError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail
+    if (typeof detail === 'string' && detail.trim()) return detail
+    if (error.code === 'ECONNABORTED') return 'A fonte demorou demais para responder. Tente novamente.'
+    if (!error.response) return 'Não foi possível conectar ao backend.'
+  }
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
+export async function searchAddress(query: string, signal?: AbortSignal, autocomplete = false): Promise<AddressSuggestion[]> {
+  if (query.trim().length < 3) return []
+  const { data } = await api.get<{ results: AddressSuggestion[] }>('/api/geocode', {
+    params: { q: query.trim(), autocomplete },
+    timeout: 20_000,
+    signal,
   })
+  return data.results
+}
+
+export async function getBusinesses(): Promise<Business[]> {
+  if (!businessesPromise) {
+    businessesPromise = api.get<{ businesses: Business[] }>('/api/businesses')
+      .then(({ data }) => data.businesses)
+      .catch(error => {
+        businessesPromise = null
+        throw error
+      })
+  }
+  return businessesPromise
+}
+
+export async function analyzeOpportunity(input: {
+  address: string
+  business_type: string
+  lat: number
+  lng: number
+  budget?: number
+  municipality_ibge_code?: string
+  municipality_name?: string
+  municipality_state?: string
+}): Promise<AnalysisResult> {
+  const { data } = await api.post<AnalysisResult>('/api/analyze-with-ai', input)
   return data
 }
 
@@ -35,7 +70,10 @@ export async function transcribeVoice(audioBase64: string): Promise<{
   entities: Record<string, string | null>
   confidence: number
 }> {
-  const { data } = await api.post('/api/voice', { audio_base64: audioBase64 })
+  const { data } = await api.post('/api/voice', {
+    audio_base64: audioBase64,
+    language: 'pt-BR',
+  })
   return data
 }
 
@@ -44,61 +82,17 @@ export async function simulateScenario(params: ScenarioParams): Promise<Simulati
   return data
 }
 
-export async function getRegions(): Promise<Region[]> {
-  const { data } = await api.get<{ regions: Region[] }>('/api/regions')
-  return data.regions
-}
-
-export async function getBusinesses(): Promise<Business[]> {
-  const { data } = await api.get<{ businesses: Business[] }>('/api/businesses')
-  return data.businesses
-}
-
 export async function calculateGameScore(
-  region: string,
+  location: Location,
   businessType: string,
-  budgetUsed: number,
-  totalBudget: number
 ): Promise<GameResult> {
   const { data } = await api.post<GameResult>('/api/gamification/score', {
-    region,
+    address: location.address,
     business_type: businessType,
-    budget_used: budgetUsed,
-    total_budget: totalBudget,
+    lat: location.lat,
+    lng: location.lng,
   })
   return data
 }
 
-// ── AI Hotspot Finder APIs ──
-
-export async function findHotspots(
-  city: string = 'São Paulo',
-  businessType: string = 'cafeteria',
-  numHotspots: number = 10
-): Promise<import('@/types').HotspotsResponse> {
-  const { data } = await api.post(`/api/hotspots/find`, null, {
-    params: {
-      city,
-      business_type: businessType,
-      num_hotspots: numHotspots,
-    },
-  })
-  return data
-}
-
-export async function analyzeCustomLocation(
-  lat: number,
-  lng: number,
-  businessType: string = 'cafeteria',
-  locationName?: string
-): Promise<import('@/types').HotspotAnalysis> {
-  const { data } = await api.post('/api/hotspots/analyze-location', null, {
-    params: {
-      lat,
-      lng,
-      business_type: businessType,
-      location_name: locationName,
-    },
-  })
-  return data
-}
+export default api

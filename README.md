@@ -1,191 +1,75 @@
-# 🎯 Radar de Oportunidades - Smart Cities
+# Radar de Oportunidades
 
-Dashboard profissional para análise de oportunidades de negócio baseado em dados demográficos, geolocalização e inteligência artificial.
+Aplicação educacional para consultar dados públicos de uma localização brasileira e produzir métricas derivadas claramente identificadas.
 
----
+## Política de dados
 
-## ✨ Características
+A aplicação não usa números fictícios como fatos. Quando uma fonte não responde ou não possui o dado, a interface exibe indisponibilidade. Projeções são rotuladas como simulação e usam hipóteses informadas pelo usuário.
 
-- 🗺️ **Mapas OpenStreetMap** (100% gratuito, sem limite)
-- 🤖 **Análise com IA** (OpenAI - opcional)
-- 📊 **Dados demográficos** reais (IBGE)
-- 📍 **Geocoding gratuito** (Nominatim)
-- 💼 **Dashboard profissional** estilo SaaS
-- 📱 **Totalmente responsivo**
+Fontes atuais:
 
----
+- OpenStreetMap/Overpass: estabelecimentos, infraestrutura e mobilidade mapeados.
+- Photon/OpenStreetMap: sugestões de endereço com debounce, feitas pelo backend.
+- Nominatim: geocodificação explícita e reversa de endereços, feita pelo backend.
+- IBGE/SIDRA: código oficial do município e PIB municipal.
+- WorldPop 100 m via Esri: estimativa populacional de 2020 dentro do raio analisado.
+- Google Cloud Speech-to-Text: opcional; sem credenciais, o recurso informa indisponibilidade.
 
-## 🚀 Início Rápido
+Consulte [METRICAS_REAIS.md](METRICAS_REAIS.md) e [SISTEMA_PONTUACAO.md](SISTEMA_PONTUACAO.md).
 
-### 1. Instalar Dependências (primeira vez)
+## Arquitetura
 
-```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-
-# Frontend
-cd ../frontend
-npm install
+```
+frontend Next.js
+  -> cliente HTTP centralizado
+backend FastAPI
+  -> Nominatim / Overpass / IBGE / WorldPop
 ```
 
-### 2. Iniciar Sistema
+Chaves privadas nunca são enviadas ao frontend. As consultas Nominatim são serializadas, limitadas e armazenadas em cache no backend.
 
-**Opção A - Automático:**
-```bash
-# Windows: duplo clique em start.cmd
-# Escolha opção 3
+## Executar localmente
+
+Backend:
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements_simple.txt
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000
 ```
 
-**Opção B - Manual:**
-```bash
-# Terminal 1 - Backend
-cd backend
-python -m uvicorn main:app --reload --port 8000
+Frontend:
 
-# Terminal 2 - Frontend  
+```powershell
 cd frontend
+npm ci
 npm run dev
 ```
 
-### 3. Acessar
+Validação do frontend (com o frontend iniciado em `http://localhost:3001` para o teste de navegador):
 
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **API Docs:** http://localhost:8000/docs
-
----
-
-## 🔑 Configuração (Opcional)
-
-### APIs Gratuitas (já funcionam):
-- ✅ OpenStreetMap - Mapas
-- ✅ Nominatim - Geocoding
-- ✅ IBGE - Dados demográficos
-
-### OpenAI (opcional - para análises IA):
-
-1. Obtenha chave em: https://platform.openai.com/api-keys
-2. Edite `backend/.env`
-3. Configure: `OPENAI_API_KEY=sua_chave`
-
-**Custo:** ~R$ 0,05 por análise
-
----
-
-## 📁 Estrutura
-
-```
-├── backend/              # API Python/FastAPI
-│   ├── main.py          # Servidor principal
-│   ├── .env             # Configuração de APIs
-│   └── requirements.txt # Dependências Python
-│
-├── frontend/            # Dashboard Next.js
-│   ├── src/
-│   │   ├── app/        # Páginas
-│   │   ├── components/ # Componentes React
-│   │   │   └── dashboard/  # Dashboard profissional
-│   │   ├── data/       # Dados mockados
-│   │   └── types/      # Tipos TypeScript
-│   ├── .env.local      # Config frontend
-│   └── package.json    # Dependências Node
-│
-├── start.cmd           # Inicia tudo automaticamente
-└── LEIA-ME.txt         # Guia rápido
+```powershell
+cd frontend
+npm run test:architecture
+npm run build
+npx next dev -p 3001
+# Em outro terminal:
+npm run test:ui
 ```
 
----
+Acesse:
 
-## 💡 Funcionalidades
+- Frontend: http://localhost:3000
+- API: http://localhost:8000
+- OpenAPI: http://localhost:8000/docs
 
-### Dashboard:
-- 📊 4 cards de indicadores (população, renda, concorrência, demanda)
-- 🗺️ Mapa interativo com marcadores coloridos
-- 📈 Ranking de melhores oportunidades
-- 💬 Justificativa de análise com IA
-- 👥 Perfil demográfico da região
-- 📊 Gráfico de performance por categoria
+Copie os arquivos `.env.example` somente se precisar alterar URLs, timeouts ou configurar voz.
 
-### Filtros:
-- 📍 Localização (busca de endereços)
-- 🏪 Tipo de negócio (8 opções)
-- 💰 Orçamento (R$ 10k - R$ 2mi+)
-- 💵 Faixa de renda do público
+## Limitações importantes
 
-### Mapa:
-- 🗺️ Modo Mapa / Satélite
-- 🔍 Zoom +/-
-- 🎯 Centralizar
-- 📍 Marcadores coloridos por score
-- 💬 Popup com informações ao clicar
-
----
-
-## 🛠️ Tecnologias
-
-### Backend:
-- Python 3.11+
-- FastAPI
-- Uvicorn
-- OpenAI API (opcional)
-
-### Frontend:
-- Next.js 14
-- React 18
-- TypeScript
-- Tailwind CSS
-- Leaflet.js (mapas)
-- Recharts (gráficos)
-
----
-
-## 💰 Custos
-
-| Serviço | Custo |
-|---------|-------|
-| OpenStreetMap | R$ 0 (gratuito) |
-| Nominatim | R$ 0 (gratuito) |
-| IBGE | R$ 0 (gratuito) |
-| OpenAI | ~R$ 0,05/análise (opcional) |
-| **Total** | **R$ 0/mês** 🎉 |
-
----
-
-## 🆘 Problemas Comuns
-
-**"pip: command not found"**
-→ Instale Python: https://www.python.org/
-
-**"npm: command not found"**  
-→ Instale Node.js: https://nodejs.org/
-
-**"Port já em uso"**
-→ Feche outros terminais rodando backend/frontend
-
-**"Mapa não carrega"**
-→ Aguarde 2-3 segundos (Leaflet carrega via CDN)
-
----
-
-## 📝 Licença
-
-Este projeto é open source.
-
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
-
----
-
-## 📚 Documentação
-
-- `LEIA-ME.txt` - Guia rápido de uso
-- `backend/.env.example` - Exemplo de configuração
-- `frontend/.env.local.example` - Exemplo de configuração
-
----
-
-**Desenvolvido para Smart Cities 2024**
+- OSM é colaborativo; ausência de cadastro não prova ausência no mundo real.
+- A população no raio é estimada pelo WorldPop, referência 2020, e não é uma contagem censitária.
+- PIB municipal não equivale a renda de bairro.
+- Não há fonte integrada para aluguel, preço de imóvel, fluxo de pedestres, custo de abertura, faturamento ou ROI; esses valores não são exibidos.
+- O índice de oportunidade é metodologia própria, não indicador oficial nem probabilidade de sucesso.

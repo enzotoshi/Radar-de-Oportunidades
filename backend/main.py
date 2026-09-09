@@ -1,60 +1,43 @@
-"""
-Radar de Oportunidades Inteligente - Backend FastAPI
-Integrado com OpenAI, IBGE API, Google Cloud Speech-to-Text
-"""
-import base64
-import os
-import re
-from typing import Dict, Any
+"""API do Radar de Oportunidades: somente dados observados ou cálculos identificados."""
+from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+import base64
+import math
+import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+import requests
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
-    AnalyzeRequest, AnalyzeResponse,
-    VoiceRequest, VoiceResponse,
-    SimulateRequest, SimulateResponse,
-    GameScoreRequest, GameScoreResponse,
-    MetricDetail, SimilarRegion, YearProjection,
+    AnalysisResponse,
+    GameScoreRequest,
+    GameScoreResponse,
+    LocationAnalysisRequest,
+    SimulateRequest,
+    SimulateResponse,
+    VoiceRequest,
+    VoiceResponse,
+    YearProjection,
 )
-from ml_engine import (
-    calculate_opportunity_score,
-    find_similar_regions,
-    simulate_scenario,
-    generate_explanation,
-    calculate_game_score,
-    get_all_regions,
-    get_all_businesses,
-    REGIONS_DATA,
-    BUSINESSES_DATA,
+from public_data_service import (
+    PublicDataUnavailable,
+    analyze_public_data,
+    list_municipalities,
+    search_location_suggestions,
+    search_locations,
 )
+from speech_service import test_speech_connection, transcribe_audio
 
-# Importa serviço de IA (Groq - GRATUITO)
-from groq_service import (
-    generate_ai_explanation,
-    generate_simulation_insights,
-    test_groq_connection,
-)
-from ibge_service import (
-    get_region_demographics,
-    test_ibge_connection,
-)
-from speech_service import (
-    transcribe_audio,
-    test_speech_connection,
-)
-
-# Importa AI Hotspot Finder
-from ai_hotspot_finder import AIHotspotFinder
-from public_data_service import analyze_public_data, PublicDataUnavailable
 
 app = FastAPI(
     title="Radar de Oportunidades Inteligente",
-    description="API para análise de oportunidades de negócio em Smart Cities",
-    version="1.0.0",
+    description="Análises com dados públicos e metodologia própria identificada",
+    version="3.0.0",
 )
 
-# CORS: aceita o frontend do GitHub Pages + localhost para desenvolvimento
 frontend_url = os.getenv("FRONTEND_URL", "https://enzotoshi.github.io")
 allowed_origins = [
     frontend_url,
@@ -62,7 +45,6 @@ allowed_origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3000",
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -72,415 +54,465 @@ app.add_middleware(
 )
 
 
-# ── Health Check ────────────────────────────────────────────────────────────────
+# Catálogo de filtros suportados. Estes itens são configuração da aplicação,
+# não observações ou alegações sobre o mercado.
+BUSINESS_CATALOG = [
+    {"id": "cafeteria", "name": "Cafeteria", "icon": "☕", "sector": "Alimentação e bebidas"},
+    {"id": "restaurante", "name": "Restaurante", "icon": "🍽️", "sector": "Alimentação e bebidas"},
+    {"id": "restaurante_saudavel", "name": "Restaurante saudável", "icon": "🥗", "sector": "Alimentação e bebidas"},
+    {"id": "lanchonete_hamburgueria", "name": "Lanchonete / Hamburgueria", "icon": "🍔", "sector": "Alimentação e bebidas"},
+    {"id": "pizzaria", "name": "Pizzaria", "icon": "🍕", "sector": "Alimentação e bebidas"},
+    {"id": "restaurante_japones", "name": "Restaurante japonês", "icon": "🍣", "sector": "Alimentação e bebidas"},
+    {"id": "padaria", "name": "Padaria", "icon": "🥖", "sector": "Alimentação e bebidas"},
+    {"id": "confeitaria_doceria", "name": "Confeitaria / Doceria", "icon": "🍰", "sector": "Alimentação e bebidas"},
+    {"id": "bar_pub", "name": "Bar ou pub", "icon": "🍺", "sector": "Alimentação e bebidas"},
+    {"id": "delivery_comida", "name": "Delivery de comida", "icon": "🛵", "sector": "Alimentação e bebidas"},
+    {"id": "academia", "name": "Academia", "icon": "🏋️", "sector": "Saúde e bem-estar"},
+    {"id": "farmacia", "name": "Farmácia", "icon": "💊", "sector": "Saúde e bem-estar"},
+    {"id": "clinica_odontologica", "name": "Clínica odontológica", "icon": "🦷", "sector": "Saúde e bem-estar"},
+    {"id": "clinica_medica", "name": "Clínica médica", "icon": "🩺", "sector": "Saúde e bem-estar"},
+    {"id": "clinica_estetica", "name": "Clínica estética", "icon": "✨", "sector": "Saúde e bem-estar"},
+    {"id": "pilates_yoga", "name": "Estúdio de Pilates / Yoga", "icon": "🧘", "sector": "Saúde e bem-estar"},
+    {"id": "loja_roupas", "name": "Loja de roupas", "icon": "👕", "sector": "Varejo"},
+    {"id": "loja_calcados", "name": "Loja de calçados", "icon": "👟", "sector": "Varejo"},
+    {"id": "loja_eletronicos", "name": "Loja de eletrônicos", "icon": "📱", "sector": "Varejo"},
+    {"id": "loja_cosmeticos", "name": "Loja de cosméticos", "icon": "💄", "sector": "Varejo"},
+    {"id": "mercado", "name": "Mercado / Supermercado", "icon": "🛒", "sector": "Varejo"},
+    {"id": "mercado_organico", "name": "Mercado orgânico", "icon": "🌿", "sector": "Varejo"},
+    {"id": "brecho", "name": "Brechó", "icon": "♻️", "sector": "Varejo"},
+    {"id": "livraria_cafe", "name": "Livraria e café", "icon": "📖", "sector": "Varejo"},
+    {"id": "moveis_decoracao", "name": "Loja de móveis e decoração", "icon": "🛋️", "sector": "Varejo"},
+    {"id": "coworking", "name": "Coworking", "icon": "💻", "sector": "Serviços"},
+    {"id": "salao_beleza", "name": "Salão de beleza", "icon": "✂️", "sector": "Serviços"},
+    {"id": "barbearia", "name": "Barbearia", "icon": "💈", "sector": "Serviços"},
+    {"id": "pet_shop", "name": "Pet shop / Veterinária", "icon": "🐾", "sector": "Serviços"},
+    {"id": "lava_rapido", "name": "Lava-rápido / Estética automotiva", "icon": "🚗", "sector": "Serviços"},
+    {"id": "servicos_limpeza", "name": "Serviços de limpeza", "icon": "🧹", "sector": "Serviços"},
+    {"id": "assistencia_tecnica", "name": "Assistência técnica", "icon": "🛠️", "sector": "Serviços"},
+    {"id": "escola_idiomas", "name": "Escola de idiomas", "icon": "📚", "sector": "Educação"},
+    {"id": "curso_profissionalizante", "name": "Escola / Curso profissionalizante", "icon": "🎓", "sector": "Educação"},
+    {"id": "curso_tecnologia", "name": "Curso de tecnologia / informática", "icon": "🖥️", "sector": "Educação"},
+    {"id": "escola_artes_musica", "name": "Escola de artes e música", "icon": "🎨", "sector": "Educação"},
+    {"id": "hotel_pousada", "name": "Hotel / Pousada", "icon": "🏨", "sector": "Negócios e outros"},
+    {"id": "imobiliaria", "name": "Imobiliária", "icon": "🏠", "sector": "Negócios e outros"},
+    {"id": "materiais_construcao", "name": "Materiais de construção", "icon": "🧱", "sector": "Negócios e outros"},
+    {"id": "casa_jardim", "name": "Loja de produtos para casa e jardim", "icon": "🌻", "sector": "Negócios e outros"},
+]
+SUPPORTED_BUSINESSES = {item["id"] for item in BUSINESS_CATALOG}
+BUSINESS_ICONS = {item["id"]: item["icon"] for item in BUSINESS_CATALOG}
+BUSINESS_ALIASES = {"restaurante_fitness": "restaurante_saudavel"}
+
+
+def _ensure_supported_business(business_type: str) -> str:
+    business_type = BUSINESS_ALIASES.get(business_type, business_type)
+    if business_type not in SUPPORTED_BUSINESSES:
+        raise HTTPException(
+            status_code=422,
+            detail="Tipo de negócio não suportado pelo mapeamento OpenStreetMap.",
+        )
+    return business_type
+
+
+def _classification(score: float) -> str:
+    if score >= 70:
+        return "Índice alto na metodologia própria"
+    if score >= 45:
+        return "Índice intermediário na metodologia própria"
+    return "Índice baixo na metodologia própria"
+
+
+def _recommendation(score: float) -> str:
+    if score >= 70:
+        return "Há sinais favoráveis nos dados mapeados; valide custos, demanda e concorrência em campo."
+    if score >= 45:
+        return "Os sinais mapeados são mistos; complemente a análise antes de investir."
+    return "Os sinais mapeados exigem cautela; o índice não substitui estudo de viabilidade."
+
+
+def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
+    business_type = _ensure_supported_business(request.business_type)
+    try:
+        analysis = analyze_public_data(
+            request.lat,
+            request.lng,
+            business_type,
+            radius=1500,
+            municipality_ibge_code=request.municipality_ibge_code,
+            municipality_name=request.municipality_name,
+            municipality_state=request.municipality_state,
+        )
+    except PublicDataUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (requests.RequestException, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=f"Fonte pública indisponível: {exc}") from exc
+
+    osm = analysis["osm"]
+    ibge = analysis["ibge"]
+    population = analysis.get("population_area")
+    city = ibge.get("city")
+    gdp = ibge.get("gdp")
+    gdp_value = None
+    if gdp:
+        gdp_value = gdp["value"]
+        if "mil" in str(gdp.get("unit") or "").lower():
+            gdp_value *= 1000
+    score_parts = analysis["score"]
+    score = score_parts["overall"]
+    radius_km = analysis["radius_meters"] / 1000
+    warnings = [
+        "A cobertura do OpenStreetMap varia por local. Ausência no mapa não prova ausência no mundo real.",
+        "Este índice é uma metodologia própria e não representa indicador oficial nem probabilidade de sucesso.",
+    ]
+    if not population:
+        warnings.append("Estimativa populacional indisponível nesta consulta.")
+    if not gdp:
+        warnings.append("PIB municipal indisponível nesta consulta.")
+
+    municipality = (
+        {
+            "ibge_code": str(city["id"]),
+            "name": city["name"],
+            "state": city.get("state"),
+        }
+        if city
+        else None
+    )
+
+    metrics = {
+        "population": {
+            "value": population["value"] if population else None,
+            "label": "População estimada na área",
+            "description": f"Soma de células no raio de {radius_km:.1f} km; não é contagem censitária.",
+            "kind": "estimated",
+            "source": "WorldPop 100 m (via Esri)",
+            "reference": str(population["year"]) if population else None,
+            "unit": "pessoas",
+        },
+        "gdp": {
+            "value": gdp_value,
+            "label": "PIB municipal",
+            "description": "PIB a preços correntes; é municipal e não representa renda do bairro.",
+            "kind": "real",
+            "source": "IBGE/SIDRA, tabela 5938, variável 37",
+            "reference": gdp["year"] if gdp else None,
+            "unit": "BRL",
+        },
+        "competitors": {
+            "value": osm["competitor_count"],
+            "label": "Estabelecimentos compatíveis no OSM",
+            "description": f"Registros mapeados no raio de {radius_km:.1f} km.",
+            "kind": "real",
+            "source": "OpenStreetMap/Overpass",
+            "reference": analysis["collected_at"],
+            "unit": "estabelecimentos",
+        },
+        "competition_density": {
+            "value": osm["competitor_density"],
+            "label": "Densidade de estabelecimentos",
+            "description": "Quantidade mapeada dividida pela área circular consultada.",
+            "kind": "calculated",
+            "source": "Cálculo do sistema sobre OpenStreetMap",
+            "reference": analysis["collected_at"],
+            "unit": "estabelecimentos/km²",
+        },
+        "infrastructure": {
+            "value": osm["infrastructure_count"],
+            "label": "Equipamentos de infraestrutura",
+            "description": "Bancos, hospitais, clínicas, escolas, universidades e mercados públicos mapeados.",
+            "kind": "real",
+            "source": "OpenStreetMap/Overpass",
+            "reference": analysis["collected_at"],
+            "unit": "equipamentos",
+        },
+        "mobility": {
+            "value": osm["transport_count"],
+            "label": "Pontos de mobilidade",
+            "description": "Transporte, estacionamento, táxi e bicicletários mapeados.",
+            "kind": "real",
+            "source": "OpenStreetMap/Overpass",
+            "reference": analysis["collected_at"],
+            "unit": "pontos",
+        },
+    }
+
+    explanation = (
+        f"A consulta encontrou {osm['competitor_count']} estabelecimentos compatíveis "
+        f"e {osm['infrastructure_count']} equipamentos de infraestrutura em um raio de "
+        f"{radius_km:.1f} km. O índice combina somente registros do OpenStreetMap: "
+        "45% concorrência, 30% infraestrutura e 25% mobilidade. "
+        "PIB e população são exibidos como contexto e não alteram o índice."
+    )
+    markers = [
+        {
+            "id": item["id"],
+            "name": item["name"],
+            "category": business_type,
+            "lat": item["lat"],
+            "lng": item["lng"],
+            "address": item.get("address"),
+            "icon": BUSINESS_ICONS[business_type],
+        }
+        for item in osm["competitors"]
+    ]
+    return {
+        "opportunity_score": score,
+        "score_label": "Índice de oportunidade — metodologia própria",
+        "metrics": metrics,
+        "explanation": explanation,
+        "classification": _classification(score),
+        "recommendation": _recommendation(score),
+        "location": {
+            "address": request.address,
+            "lat": request.lat,
+            "lng": request.lng,
+            "municipality": municipality,
+        },
+        "business_type": business_type,
+        "radius_meters": analysis["radius_meters"],
+        "business_markers": markers,
+        "sources": analysis["sources"],
+        "collected_at": analysis["collected_at"],
+        "methodology": {
+            "formula": "0,45 × concorrência + 0,30 × infraestrutura + 0,25 × mobilidade",
+            "competition": "máx(0, 100 − densidade_de_estabelecimentos × 9)",
+            "infrastructure": "mín(100, equipamentos_mapeados × 5)",
+            "mobility": "mín(100, pontos_de_mobilidade_mapeados × 7)",
+            "components": score_parts,
+        },
+        "warnings": warnings,
+    }
+
 
 @app.get("/")
-def health_check():
-    """Health check com status das APIs integradas."""
-    groq_status = test_groq_connection()
-    ibge_status = test_ibge_connection()
-    speech_status = test_speech_connection()
-    
+def health_check() -> Dict[str, Any]:
     return {
         "status": "online",
         "service": "Radar de Oportunidades Inteligente",
-        "version": "2.0.0",
-        "apis": {
-            "groq_ai": "connected" if groq_status else "fallback mode",
-            "ibge": "connected" if ibge_status else "fallback mode",
-            "google_speech": "connected" if speech_status else "fallback mode",
+        "version": "3.0.0",
+        "data_policy": "real-only",
+        "sources": {
+            "openstreetmap": "consultada sob demanda",
+            "ibge": "consultada sob demanda",
+            "worldpop": "consultada sob demanda",
+            "google_speech": "configured" if test_speech_connection() else "unavailable",
         },
     }
 
 
-# ── Análise de Oportunidade ─────────────────────────────────────────────────────
-
-@app.post("/api/analyze", response_model=AnalyzeResponse, deprecated=True)
-def analyze_opportunity(req: AnalyzeRequest):
-    """Impede análises sem coordenadas, que antes usavam dados cadastrados fictícios."""
-    raise HTTPException(
-        status_code=422,
-        detail="Selecione um endereço ou ponto no mapa e use /api/analyze-with-ai com latitude e longitude.",
-    )
-
-
-def _build_recommendation(score: float, risk: str) -> str:
-    if score >= 75:
-        return "✅ Fortemente recomendado — alta probabilidade de sucesso nesta combinação."
-    elif score >= 60:
-        return "👍 Recomendado — boa oportunidade com riscos gerenciáveis."
-    elif score >= 45:
-        return "⚠️ Análise cuidadosa necessária — oportunidade moderada com riscos relevantes."
-    elif score >= 30:
-        return "🔶 Não recomendado sem estratégia diferenciada — concorrência ou perfil desfavorável."
-    else:
-        return "❌ Alto risco — reconsidere a região ou o tipo de negócio."
-
-
-# ── Transcrição de Voz ──────────────────────────────────────────────────────────
-
-@app.post("/api/voice", response_model=VoiceResponse)
-def process_voice(req: VoiceRequest):
-    """
-    Recebe áudio em base64, transcreve usando Google Cloud Speech-to-Text
-    e extrai entidades (negócio, região, orçamento, público).
-    """
+@app.get("/api/geocode")
+def geocode(
+    q: str = Query(..., min_length=3, max_length=250),
+    autocomplete: bool = Query(default=False),
+) -> Dict[str, Any]:
     try:
-        audio_bytes = base64.b64decode(req.audio_base64)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Áudio base64 inválido.")
-
-    # Transcreve usando Google Cloud Speech-to-Text
-    try:
-        result = transcribe_audio(audio_bytes, language_code="pt-BR")
-        
-        return VoiceResponse(
-            transcript=result["transcript"],
-            entities=result["entities"],
-            confidence=result["confidence"],
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao processar áudio: {str(e)}"
-        )
-
-
-# ── Simulação de Cenários ───────────────────────────────────────────────────────
-
-@app.post("/api/simulate", response_model=SimulateResponse)
-def simulate(req: SimulateRequest):
-    """
-    Simula cenário futuro com parâmetros ajustáveis.
-    Usa OpenAI para gerar insights inteligentes quando disponível.
-    """
-    region_id = req.region.lower().replace(" ", "_")
-    business_id = req.business_type.lower().replace(" ", "_")
-
-    if region_id not in REGIONS_DATA:
-        raise HTTPException(status_code=404, detail=f"Região '{req.region}' não encontrada.")
-    if business_id not in BUSINESSES_DATA:
-        raise HTTPException(status_code=404, detail=f"Tipo de negócio '{req.business_type}' não encontrado.")
-
-    result = simulate_scenario(
-        region_id, business_id, req.budget,
-        req.population_growth, req.income_growth, req.new_competitors,
-    )
-
-    delta = result["delta"]
-    
-    # Tenta gerar explicação com Groq AI
-    try:
-        explanation = generate_simulation_insights(
-            original_score=result["original_score"],
-            projected_score=result["projected_score"],
-            population_growth=req.population_growth,
-            income_growth=req.income_growth,
-            new_competitors=req.new_competitors,
-        )
-    except Exception as e:
-        print(f"Erro ao gerar insights com IA: {e}")
-        # Fallback para explicação simples
-        if delta > 10:
-            explanation = f"Cenário otimista: o score deve subir {delta:.1f} pontos em 5 anos."
-        elif delta > 0:
-            explanation = f"Cenário levemente positivo: melhora de {delta:.1f} pontos."
-        elif delta > -10:
-            explanation = f"Cenário estável com leve retração de {abs(delta):.1f} pontos."
-        else:
-            explanation = f"Cenário de alerta: queda de {abs(delta):.1f} pontos projetada."
-
-    key_factors = []
-    if req.population_growth > 10:
-        key_factors.append(f"Crescimento populacional de +{req.population_growth:.0f}% amplia o público-alvo")
-    if req.income_growth > 15:
-        key_factors.append(f"Aumento de renda de +{req.income_growth:.0f}% eleva o poder de compra")
-    if req.new_competitors > 5:
-        key_factors.append(f"{req.new_competitors} novos concorrentes pressionam as margens")
-    if not key_factors:
-        key_factors.append("Parâmetros moderados resultam em estabilidade do mercado")
-
-    return SimulateResponse(
-        original_score=result["original_score"],
-        projected_score=result["projected_score"],
-        delta=result["delta"],
-        projections=[YearProjection(**p) for p in result["projections"]],
-        explanation=explanation,
-        key_factors=key_factors,
-    )
-
-
-# ── Gamificação ─────────────────────────────────────────────────────────────────
-
-@app.post("/api/gamification/score", response_model=GameScoreResponse)
-def gamification_score(req: GameScoreRequest):
-    region_id = req.region.lower().replace(" ", "_")
-    business_id = req.business_type.lower().replace(" ", "_")
-
-    if region_id not in REGIONS_DATA:
-        raise HTTPException(status_code=404, detail=f"Região '{req.region}' não encontrada.")
-    if business_id not in BUSINESSES_DATA:
-        raise HTTPException(status_code=404, detail=f"Tipo de negócio '{req.business_type}' não encontrado.")
-
-    result = calculate_game_score(region_id, business_id, req.budget_used, req.total_budget)
-
-    return GameScoreResponse(**result)
-
-
-# ── Dados de Referência ─────────────────────────────────────────────────────────
-
-@app.get("/api/regions")
-def list_regions():
-    regions = get_all_regions()
-    return {"regions": regions, "total": len(regions)}
+        results = search_location_suggestions(q) if autocomplete else search_locations(q)
+        return {
+            "results": results,
+            "source": "Photon/OpenStreetMap" if autocomplete else "Nominatim/OpenStreetMap",
+            "usage": "autocomplete com debounce" if autocomplete else "busca explícita confirmada",
+        }
+    except (requests.RequestException, PublicDataUnavailable) as exc:
+        raise HTTPException(status_code=503, detail=f"Geocodificação indisponível: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/api/businesses")
-def list_businesses():
-    businesses = get_all_businesses()
-    # Retorna apenas array de nomes (string) para o frontend
-    return [b["name"] for b in businesses]
-
-
-# ── AI Hotspot Finder ───────────────────────────────────────────────────────────
-
-@app.post("/api/hotspots/find")
-def find_hotspots(
-    city: str = "São Paulo",
-    business_type: str = "cafeteria",
-    num_hotspots: int = 10
-):
-    """
-    Encontra automaticamente os melhores hotspots para um negócio
-    usando análise real do Google Maps API + IA.
-    
-    Parâmetros:
-    - city: Nome da cidade (ex: "São Paulo", "Rio de Janeiro")
-    - business_type: Tipo de negócio (ex: "cafeteria", "academia")
-    - num_hotspots: Número de hotspots para retornar (padrão: 10)
-    """
-    try:
-        finder = AIHotspotFinder()
-        hotspots = finder.find_hotspots(
-            city=city,
-            business_type=business_type,
-            num_hotspots=num_hotspots
-        )
-        
-        return {
-            "city": city,
-            "business_type": business_type,
-            "total_found": len(hotspots),
-            "hotspots": hotspots,
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao buscar hotspots: {str(e)}"
-        )
-
-
-@app.post("/api/hotspots/analyze-location")
-def analyze_custom_location(
-    lat: float,
-    lng: float,
-    business_type: str = "cafeteria",
-    location_name: str = None
-):
-    """
-    Analisa uma localização customizada (usuário clica no mapa)
-    e retorna análise de oportunidade baseada em dados reais.
-    
-    Parâmetros:
-    - lat: Latitude
-    - lng: Longitude
-    - business_type: Tipo de negócio
-    - location_name: Nome opcional da localização
-    """
-    try:
-        finder = AIHotspotFinder()
-        analysis = finder.analyze_custom_location(
-            lat=lat,
-            lng=lng,
-            business_type=business_type,
-            location_name=location_name
-        )
-        
-        return analysis
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao analisar localização: {str(e)}"
-        )
-
-
-# ── Status das APIs ──────────────────────────────────────────────────────────────
-
-@app.get("/api/status")
-def api_status():
-    """
-    Retorna o status de conexão de todas as APIs integradas.
-    """
-    groq_connected = test_groq_connection()
-    ibge_connected = test_ibge_connection()
-    speech_connected = test_speech_connection()
-    
+def list_businesses() -> Dict[str, Any]:
     return {
-        "apis": {
-            "groq_ai": {
-                "status": "connected" if groq_connected else "disconnected",
-                "description": "IA gratuita (Llama 3) para explicações inteligentes",
-                "fallback": "Explicações baseadas em regras (disponível)",
-            },
-            "ibge": {
-                "status": "connected" if ibge_connected else "disconnected",
-                "description": "Dados demográficos reais de municípios brasileiros",
-                "fallback": "Dados simulados (disponível)",
-            },
-            "google_speech": {
-                "status": "connected" if speech_connected else "disconnected",
-                "description": "Transcreve áudio para texto",
-                "fallback": "Transcrição simulada (disponível)",
-            },
-        },
-        "overall_status": "operational" if any([groq_connected, ibge_connected, speech_connected]) else "fallback_mode",
+        "businesses": BUSINESS_CATALOG,
+        "note": "Catálogo de filtros suportados; não representa estatística de mercado.",
     }
 
 
-# ── Análise de Localização com IA ──────────────────────────────────────────────
-
-from pydantic import BaseModel
-
-class AIAnalysisRequest(BaseModel):
-    address: str
-    business_type: str
-    lat: float
-    lng: float
-    budget: float = 100000
-
-@app.post("/api/analyze-with-ai")
-def analyze_location_with_ai(request: AIAnalysisRequest):
-    """
-    Analisa uma localização com dados públicos reais do OSM e IBGE.
-
-    Não há fallback simulado: se a fonte principal estiver indisponível, a API
-    responde com erro 503 em vez de fabricar valores.
-    """
-    return _analyze_location_with_public_data(request)
-def _competition_level(density: float) -> str:
-    if density < 1:
-        return "Baixa"
-    if density < 3:
-        return "Moderada"
-    if density < 6:
-        return "Alta"
-    return "Muito alta"
-
-
-def _format_brl(value: float) -> str:
-    return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def _format_compact_brl(value: float) -> str:
-    if value >= 1_000_000_000_000:
-        return f"R$ {value / 1_000_000_000_000:.2f} tri".replace(".", ",")
-    if value >= 1_000_000_000:
-        return f"R$ {value / 1_000_000_000:.2f} bi".replace(".", ",")
-    if value >= 1_000_000:
-        return f"R$ {value / 1_000_000:.2f} mi".replace(".", ",")
-    return _format_brl(value)
-
-
-def _analyze_location_with_public_data(request: AIAnalysisRequest) -> Dict[str, Any]:
+@app.get("/api/regions")
+def list_regions(uf: Optional[str] = Query(default=None, min_length=2, max_length=2)) -> Dict[str, Any]:
     try:
-        analysis = analyze_public_data(
-            request.lat, request.lng, request.business_type, radius=1500
-        )
-        osm = analysis["osm"]
-        ibge = analysis["ibge"]
-        score = analysis["score"]["overall"]
-        population = analysis.get("population_area")
-        gdp = ibge.get("gdp")
-        city = ibge.get("city")
-
-        population_value = (
-            f"{int(population['value']):,}".replace(",", ".")
-            if population else "Indisponível"
-        )
-        # A variável 37 da tabela 5938 é publicada em milhares de reais.
-        gdp_value = _format_compact_brl(gdp["value"] * 1000) if gdp else "Indisponível"
-        competition_level = _competition_level(osm["competitor_density"])
-        risk_level = "low" if score >= 70 else "medium" if score >= 45 else "high"
-        place_name = city["name"] if city else request.address
-
-        explanation = (
-            f"Foram encontrados {osm['competitor_count']} estabelecimentos compatíveis "
-            f"com {request.business_type} em um raio de {analysis['radius_meters'] / 1000:.1f} km "
-            f"de {request.address}, resultando em densidade de "
-            f"{osm['competitor_density']:.2f} concorrentes/km² ({competition_level.lower()}). "
-            f"O OpenStreetMap também registra {osm['infrastructure_count']} equipamentos de "
-            f"infraestrutura e {osm['transport_count']} opções ou pontos de mobilidade nesse raio.\n\n"
-            f"A população exibida é uma estimativa em grade de 100 m do WorldPop, "
-            f"somada somente dentro do mesmo raio de 1,5 km. O índice é calculado "
-            f"somente dos registros do OSM: 45% concorrência, 30% infraestrutura e "
-            f"25% mobilidade. A cobertura do "
-            "OpenStreetMap varia por região; confirme a concorrência em pesquisa de campo."
-        )
-
-        markers = [
-            {
-                "id": item["id"],
-                "name": item["name"],
-                "category": request.business_type,
-                "lat": item["lat"],
-                "lng": item["lng"],
-                "competition": competition_level,
-                "potential": score,
-                "icon": "store",
-                "color": "blue",
-            }
-            for item in osm["competitors"]
-        ]
-
+        regions = list_municipalities(uf)
         return {
-            "opportunity_score": score,
-            "metrics": {
-                "population": {
-                    "value": population_value,
-                    "label": "Pessoas na área",
-                    "description": f"Estimativa WorldPop {population['year']} · raio de 1,5 km" if population else "WorldPop indisponível nesta consulta",
-                },
-                "gdp": {
-                    "value": gdp_value,
-                    "label": "PIB municipal",
-                    "description": f"IBGE/SIDRA tabela 5938, {gdp['year']}" if gdp else "IBGE não retornou o dado",
-                },
-                "competition": {
-                    "value": str(osm["competitor_count"]),
-                    "label": "Concorrentes no OSM",
-                    "description": f"Raio de 1,5 km · {osm['competitor_density']:.2f}/km²",
-                },
-                "mobility": {
-                    "value": str(osm["transport_count"]),
-                    "label": "Pontos de mobilidade",
-                    "description": "Transporte e estacionamento mapeados no OSM",
-                },
-            },
-            "explanation": explanation,
-            "risk_level": risk_level,
-            "estimated_roi": "Não calculado sem dados financeiros reais",
-            "recommendation": _build_recommendation(score, risk_level),
-            "similar_regions": [],
-            "location": {"address": request.address, "lat": request.lat, "lng": request.lng},
-            "business_markers": markers,
-            "sources": analysis["sources"],
-            "collected_at": analysis["collected_at"],
-            "methodology": analysis["score"],
+            "regions": regions,
+            "total": len(regions),
+            "source": "IBGE API de Localidades",
         }
-    except PublicDataUnavailable as exc:
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503, detail=f"IBGE indisponível: {exc}") from exc
+    except (PublicDataUnavailable, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/analyze", deprecated=True)
+def analyze_legacy() -> None:
+    raise HTTPException(
+        status_code=410,
+        detail="Use /api/analyze-with-ai com endereço e coordenadas geocodificadas.",
+    )
+
+
+@app.post("/api/analyze-with-ai", response_model=AnalysisResponse)
+def analyze_location(request: LocationAnalysisRequest) -> Dict[str, Any]:
+    # O nome histórico da rota foi mantido por compatibilidade. Nenhuma IA é
+    # usada como fonte factual.
+    return _build_analysis(request)
+
+
+@app.post("/api/voice", response_model=VoiceResponse)
+def process_voice(request: VoiceRequest) -> VoiceResponse:
+    try:
+        audio_bytes = base64.b64decode(request.audio_base64, validate=True)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="Áudio base64 inválido.") from exc
+    try:
+        result = transcribe_audio(audio_bytes, language_code=request.language)
+    except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        print(f"Erro na análise com dados públicos: {exc}")
-        raise HTTPException(
-            status_code=500, detail=f"Erro na análise com dados públicos: {exc}"
-        ) from exc
+    return VoiceResponse(
+        transcript=result["transcript"],
+        entities=result["entities"],
+        confidence=result["confidence"],
+    )
+
+
+@app.post("/api/simulate", response_model=SimulateResponse)
+def simulate(request: SimulateRequest) -> SimulateResponse:
+    business_type = _ensure_supported_business(request.business_type)
+    try:
+        observed = analyze_public_data(request.lat, request.lng, business_type, radius=1500)
+    except (PublicDataUnavailable, requests.RequestException, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=f"Dados-base indisponíveis: {exc}") from exc
+
+    base_score = observed["score"]["overall"]
+    base_competition = observed["score"]["competition"]
+    density = observed["osm"]["competitor_density"]
+    area_km2 = math.pi * (observed["radius_meters"] / 1000) ** 2
+    current_year = datetime.now(timezone.utc).year
+    projections: List[YearProjection] = []
+
+    for offset in range(1, 6):
+        factor = offset / 5
+        added_density = request.new_competitors * factor / area_km2
+        projected_competition = max(0.0, 100.0 - (density + added_density) * 9.0)
+        competition_delta = (projected_competition - base_competition) * 0.45
+        assumption_adjustment = (
+            request.population_growth * factor * 0.10
+            + request.income_growth * factor * 0.10
+        )
+        projected = max(0.0, min(100.0, base_score + competition_delta + assumption_adjustment))
+        year = current_year + offset
+        projections.append(
+            YearProjection(year=year, score=round(projected, 1), label=str(year))
+        )
+
+    projected_score = projections[-1].score
+    delta = round(projected_score - base_score, 1)
+    return SimulateResponse(
+        original_score=base_score,
+        projected_score=projected_score,
+        delta=delta,
+        projections=projections,
+        explanation=(
+            "Projeção de cenário, não previsão. O ponto de partida usa a coleta real; "
+            "as variações futuras são hipóteses informadas pelo usuário."
+        ),
+        key_factors=[
+            f"Hipótese de população em 5 anos: {request.population_growth:+.1f}%",
+            f"Hipótese de renda em 5 anos: {request.income_growth:+.1f}%",
+            f"Hipótese de novos concorrentes em 5 anos: {request.new_competitors}",
+        ],
+        assumptions={
+            "population_growth_percent_5y": request.population_growth,
+            "income_growth_percent_5y": request.income_growth,
+            "new_competitors_5y": request.new_competitors,
+            "classification": "hipóteses do usuário",
+        },
+        methodology=(
+            "score projetado = score observado + 45% da variação do componente de "
+            "concorrência + 0,10 ponto por ponto percentual das hipóteses de população "
+            "e renda, aplicado progressivamente em cinco anos; limitado a 0–100."
+        ),
+        source_analysis_at=observed["collected_at"],
+    )
+
+
+@app.post("/api/gamification/score", response_model=GameScoreResponse)
+def gamification_score(request: GameScoreRequest) -> GameScoreResponse:
+    business_type = _ensure_supported_business(request.business_type)
+    try:
+        observed = analyze_public_data(request.lat, request.lng, business_type, radius=1500)
+    except (PublicDataUnavailable, requests.RequestException, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=f"Dados-base indisponíveis: {exc}") from exc
+
+    parts = observed["score"]
+    competition = round(parts["competition"] * 4)
+    infrastructure = round(parts["infrastructure"] * 3)
+    mobility = round(parts["mobility"] * 3)
+    total = competition + infrastructure + mobility
+    if total >= 700:
+        classification = "Leitura consistente do contexto"
+    elif total >= 450:
+        classification = "Contexto misto"
+    else:
+        classification = "Contexto exige investigação"
+
+    return GameScoreResponse(
+        total_score=total,
+        competition_component=competition,
+        infrastructure_component=infrastructure,
+        mobility_component=mobility,
+        classification=classification,
+        feedback=(
+            "Pontuação educacional calculada exclusivamente sobre registros mapeados. "
+            "Ela não estima retorno financeiro ou chance de sucesso."
+        ),
+        tips=[
+            "Confira estabelecimentos ausentes ou desatualizados em pesquisa de campo.",
+            "Valide aluguel, custos, licenças e demanda antes de qualquer decisão.",
+            "Compare novas localizações repetindo a mesma metodologia e o mesmo raio.",
+        ],
+        methodology=(
+            "0–400 pontos de concorrência + 0–300 de infraestrutura + "
+            "0–300 de mobilidade, derivados dos componentes da análise OSM."
+        ),
+        source_analysis_at=observed["collected_at"],
+    )
+
+
+@app.post("/api/hotspots/analyze-location", response_model=AnalysisResponse)
+def analyze_custom_location(request: LocationAnalysisRequest) -> Dict[str, Any]:
+    return _build_analysis(request)
+
+
+@app.post("/api/hotspots/find", deprecated=True)
+def find_hotspots_disabled() -> None:
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "O ranking automático foi desativado porque dependia de coordenadas fixas. "
+            "Analise endereços geocodificados em /api/analyze-with-ai."
+        ),
+    )
+
+
+@app.get("/api/status")
+def api_status() -> Dict[str, Any]:
+    return {
+        "data_policy": "real-only",
+        "sources": {
+            "photon": {"status": "on-demand", "cache": "30 dias", "usage": "autocomplete"},
+            "nominatim": {
+                "status": "on-demand",
+                "cache": "30 dias",
+                "limits": "requisições serializadas; no máximo 1 por segundo",
+            },
+            "openstreetmap_overpass": {"status": "on-demand", "cache": "15 minutos"},
+            "ibge": {"status": "on-demand", "cache": "30 dias"},
+            "worldpop": {
+                "status": "on-demand",
+                "cache": "30 dias",
+                "reference": os.getenv("WORLDPOP_YEAR", "2020"),
+            },
+            "google_speech": {
+                "status": "configured" if test_speech_connection() else "unavailable",
+                "fabricated_data": False,
+            },
+        },
+    }
