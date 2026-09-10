@@ -39,6 +39,22 @@ export async function searchAddress(query: string, signal?: AbortSignal, autocom
   return data.results
 }
 
+export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal): Promise<AddressSuggestion | null> {
+  try {
+    const { data } = await api.get<{ result: AddressSuggestion }>('/api/reverse-geocode', {
+      params: { lat, lng },
+      timeout: 20_000,
+      signal,
+    })
+    return data.result
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null
+    }
+    throw error
+  }
+}
+
 export async function getBusinesses(): Promise<Business[]> {
   if (!businessesPromise) {
     businessesPromise = api.get<{ businesses: Business[] }>('/api/businesses')
@@ -62,18 +78,6 @@ export async function analyzeOpportunity(input: {
   municipality_state?: string
 }): Promise<AnalysisResult> {
   const { data } = await api.post<AnalysisResult>('/api/analyze-with-ai', input)
-  return data
-}
-
-export async function transcribeVoice(audioBase64: string): Promise<{
-  transcript: string
-  entities: Record<string, string | null>
-  confidence: number
-}> {
-  const { data } = await api.post('/api/voice', {
-    audio_base64: audioBase64,
-    language: 'pt-BR',
-  })
   return data
 }
 

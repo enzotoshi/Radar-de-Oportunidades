@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Crosshair, Info, MapPin, PanelRightOpen } from 'lucide-react'
-import { analyzeOpportunity, getApiError } from '@/lib/api'
+import { analyzeOpportunity, getApiError, reverseGeocode } from '@/lib/api'
 import { parseBudgetInput } from '@/lib/formatters'
 import type { AddressSuggestion, AnalysisResult } from '@/types'
 import OpportunityQuery from './analysis/OpportunityQuery'
@@ -13,7 +13,6 @@ import Button from './shared/Button'
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
 interface Props {
-  active: boolean
   selectedRegion: string
   setSelectedRegion: (value: string) => void
   selectedBusiness: string
@@ -23,19 +22,22 @@ interface Props {
   onGoToInvestor: () => void
 }
 
-export default function MapAnalysis({ active, selectedRegion, setSelectedRegion, selectedBusiness, setSelectedBusiness, analysisResult, setAnalysisResult, onGoToInvestor }: Props) {
+export default function MapAnalysis({ selectedRegion, setSelectedRegion, selectedBusiness, setSelectedBusiness, analysisResult, setAnalysisResult, onGoToInvestor }: Props) {
   const [address, setAddress] = useState(selectedRegion)
   const [selectedLocation, setSelectedLocation] = useState<AddressSuggestion | null>(null)
   const [budget, setBudget] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(true)
+  const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null)
   const analysisVersion = useRef(0)
+  const reverseGeocodeVersion = useRef(0)
 
   const invalidateAnalysis = () => {
     analysisVersion.current += 1
     setAnalyzing(false)
     setAnalysisResult(null)
+    setClickedLocation(null)
   }
   const changeAddress = (value: string) => { setAddress(value); setSelectedLocation(null); invalidateAnalysis() }
   const chooseLocation = (location: AddressSuggestion) => {
@@ -46,6 +48,36 @@ export default function MapAnalysis({ active, selectedRegion, setSelectedRegion,
   }
   const changeBusiness = (value: string) => { setSelectedBusiness(value); invalidateAnalysis() }
   const changeBudget = (value: string) => { setBudget(value); invalidateAnalysis() }
+
+  const handleMapClick = async (lat: number, lng: number) => {
+    const version = ++reverseGeocodeVersion.current
+    setClickedLocation({ lat, lng })
+    setError(null)
+    // Não invalida análise aqui - apenas ao receber o endereço
+
+    try {
+      const result = await reverseGeocode(lat, lng)
+
+      if (version !== reverseGeocodeVersion.current) return
+
+      if (result) {
+        setSelectedLocation(result)
+        setAddress(result.display_name)
+        setSelectedRegion(result.display_name)
+        // Invalida análise apenas após obter endereço válido
+        analysisVersion.current += 1
+        setAnalysisResult(null)
+      } else {
+        setError('Não foi possível identificar um endereço para essa localização. Tente pesquisar um endereço próximo.')
+        setClickedLocation(null)
+      }
+    } catch (reason) {
+      if (version === reverseGeocodeVersion.current) {
+        setError(getApiError(reason, 'Não foi possível obter o endereço dessa localização.'))
+        setClickedLocation(null)
+      }
+    }
+  }
 
   const handleAnalyze = async () => {
     if (!selectedLocation) { setError('Busque e selecione uma localização verificada antes de analisar.'); return }
@@ -78,9 +110,13 @@ export default function MapAnalysis({ active, selectedRegion, setSelectedRegion,
       {analysisResult && <Button variant="secondary" size="compact" className="insights-toggle" aria-expanded={insightsOpen} aria-controls="analysis-insights" onClick={() => setInsightsOpen(value => !value)}><PanelRightOpen size={17} aria-hidden="true" />{insightsOpen ? 'Ocultar evidências' : 'Ver evidências'}</Button>}
     </div>
     <div className="atlas-workspace" data-has-result={Boolean(analysisResult)}>
-      <OpportunityQuery active={active} address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
-      <section className="atlas-map map-stage" aria-label="Mapa com dados observados">
-        <div className="map-canvas"><MapComponent analysisResult={analysisResult} /></div>
+      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
+      <section className="atlas-map" aria-label="Mapa com dados observados">
+        <div className="map-canvas"><MapComponent
+          analysisResult={analysisResult}
+          onMapClick={handleMapClick}
+          selectedLocation={clickedLocation || (selectedLocation ? { lat: selectedLocation.lat, lng: selectedLocation.lng } : null)}
+        /></div>
         <div className="territory-label"><MapPin size={18} aria-hidden="true" /><span>{analysisResult?.location.municipality?.name || 'Brasil'}<small>{analysisResult ? 'Território consultado' : 'Visão do território'}</small></span></div>
         <div className="map-legend" aria-label="Legenda do mapa"><span><i className="business-key" />Estabelecimentos OSM</span><span><i className="location-key" />Ponto analisado</span><span><Crosshair size={14} aria-hidden="true" />Raio de 1,5 km</span></div>
         <div className="map-context"><Info size={17} aria-hidden="true" /><p>{analysisResult ? 'Ausência de marcador não comprova ausência de estabelecimento.' : 'O mapa organiza os sinais públicos; valide decisões importantes em campo.'}</p></div>

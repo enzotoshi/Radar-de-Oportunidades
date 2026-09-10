@@ -35,7 +35,7 @@ export default function MainApp() {
       <main id="conteudo" className="app-main" tabIndex={-1}>
         <div className="view-stack">
           {visited.includes('map') && <motion.div hidden={activeTab !== 'map'} initial={false} animate={{ opacity: activeTab === 'map' ? 1 : 0 }} transition={gentleFade}>
-            <MapAnalysis active={activeTab === 'map'} selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} selectedBusiness={selectedBusiness} setSelectedBusiness={setSelectedBusiness} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult} onGoToInvestor={() => navigate('gamification', true)} />
+            <MapAnalysis selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} selectedBusiness={selectedBusiness} setSelectedBusiness={setSelectedBusiness} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult} onGoToInvestor={() => navigate('gamification', true)} />
           </motion.div>}
           {visited.includes('simulation') && <motion.div hidden={activeTab !== 'simulation'} initial={false} animate={{ opacity: activeTab === 'simulation' ? 1 : 0 }} transition={gentleFade}>
             <ScenarioSimulation analysisResult={analysisResult} businessType={selectedBusiness} onGoToMap={() => navigate('map', true)} />
