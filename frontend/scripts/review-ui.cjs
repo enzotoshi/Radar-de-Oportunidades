@@ -85,6 +85,50 @@ async function main() {
 
   try {
     await page.goto(baseURL)
+    await page.locator('#hero-title').waitFor({ state: 'attached' })
+    await page.waitForTimeout(2000)
+    assert.equal(await page.locator('#hero-title').isVisible(), true, `Landing hero must be visible; ${JSON.stringify(errors)}`)
+    assert.equal(await page.getByRole('navigation', { name: /principal/i }).count(), 1)
+    assert.equal(await page.getByRole('link', { name: /Explorar Radar/ }).getAttribute('href'), '/radar')
+    assert.equal(await page.locator('a[href$="/radar"]').count(), 3)
+    await assertNoSeriousAxeViolations(page, 'landing page')
+    for (const width of [1440, 1024, 768, 375, 320]) {
+      await page.setViewportSize({ width, height: 900 })
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
+      assert.equal(overflow, false, `Landing horizontal overflow: ${width}px`)
+      if (width === 375) {
+        await page.locator('#problem-title').scrollIntoViewIfNeeded()
+        const mobileCards = page.getByRole('region', { name: /transforma dados em oportunidades/i })
+        await mobileCards.scrollIntoViewIfNeeded()
+        await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#como-funciona')).opacity) > .99)
+        const mobileBenefits = page.getByRole('region', { name: /Mais clareza/i })
+        await mobileBenefits.scrollIntoViewIfNeeded()
+        await page.waitForFunction(() => {
+          const panels = document.querySelector('#benefits-title')?.parentElement?.nextElementSibling
+          return panels && Number(getComputedStyle(panels).opacity) > .99
+        })
+        await page.screenshot({ path: path.join(destination, '00-landing-mobile.png'), fullPage: true })
+      }
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page.locator('#problem-title').scrollIntoViewIfNeeded()
+    const featureCards = page.getByRole('region', { name: /transforma dados em oportunidades/i })
+    await featureCards.scrollIntoViewIfNeeded()
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#como-funciona')).opacity) > .99)
+    assert.equal(await featureCards.getByRole('article').count(), 1)
+    await featureCards.getByRole('heading', { name: 'Do dado bruto ao sinal certo.' }).waitFor()
+    const benefitsSection = page.getByRole('region', { name: /Mais clareza/i })
+    await benefitsSection.scrollIntoViewIfNeeded()
+    await page.waitForFunction(() => {
+      const panels = document.querySelector('#benefits-title')?.parentElement?.nextElementSibling
+      return panels && Number(getComputedStyle(panels).opacity) > .99
+    })
+    assert.equal(await benefitsSection.getByRole('article').count(), 4)
+    await benefitsSection.getByRole('heading', { name: 'Mais clareza. Menos esforço.' }).waitFor()
+    await assertNoSeriousAxeViolations(page, 'landing page revelada')
+    await page.screenshot({ path: path.join(destination, '00-landing.png'), fullPage: true })
+    await page.getByRole('link', { name: /Explorar Radar/ }).click()
+    await page.waitForURL(/\/radar\/?$/)
     await page.getByRole('banner').waitFor()
     assert.equal(await page.getByRole('navigation', { name: 'Áreas do Radar' }).count(), 1)
     assert.equal(await page.locator('.app-header .primary-navigation').count(), 1)
