@@ -12,7 +12,7 @@ import VoiceInput from '../VoiceInput'
 import BusinessPicker from './BusinessPicker'
 
 interface OpportunityQueryProps {
-  active: boolean
+  active?: boolean
   address: string
   selectedLocation: AddressSuggestion | null
   selectedBusiness: string
@@ -44,7 +44,7 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
         <label htmlFor="analysis-budget" className="field-label"><CircleDollarSign size={16} aria-hidden="true" />Orçamento informado por você</label>
         <div className="money-control"><span aria-hidden="true">R$</span><input id="analysis-budget" className="field-control" type="text" inputMode="numeric" autoComplete="off" placeholder="Digite o valor..." value={props.budget} onChange={event => props.onBudgetChange(formatBudgetInput(event.target.value))} /></div>
       </div>
-      <VoiceInput active={props.active} onResult={(_transcript, entities) => {
+      <VoiceInput active={props.active ?? true} onResult={(_transcript, entities) => {
         if (entities.location) props.onAddressChange(entities.location)
         if (entities.business_type) props.onBusinessChange(entities.business_type)
         if (entities.budget) props.onBudgetChange(formatBudgetInput(entities.budget))

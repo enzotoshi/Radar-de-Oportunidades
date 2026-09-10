@@ -8,11 +8,15 @@ const OpenStreetMap = dynamic(() => import('./OpenStreetMap'), { ssr: false })
 
 interface MapComponentProps {
   analysisResult: AnalysisResult | null
+  onMapClick?: (lat: number, lng: number) => void
+  selectedLocation?: { lat: number; lng: number } | null
 }
 
-export default function MapComponent({ analysisResult }: MapComponentProps) {
+export default function MapComponent({ analysisResult, onMapClick, selectedLocation }: MapComponentProps) {
   const [center, setCenter] = useState<[number, number]>([-14.2, -51.9])
   const [zoom, setZoom] = useState(4)
+  const selectedLat = selectedLocation?.lat
+  const selectedLng = selectedLocation?.lng
 
   useEffect(() => {
     if (analysisResult) {
@@ -20,6 +24,13 @@ export default function MapComponent({ analysisResult }: MapComponentProps) {
       setZoom(15)
     }
   }, [analysisResult])
+
+  useEffect(() => {
+    if (selectedLat !== undefined && selectedLng !== undefined) {
+      setCenter([selectedLat, selectedLng])
+      setZoom(15)
+    }
+  }, [selectedLat, selectedLng])
 
   const markers = useMemo(() => analysisResult
     ? [
@@ -37,9 +48,19 @@ export default function MapComponent({ analysisResult }: MapComponentProps) {
       ]
     : [], [analysisResult])
 
+  // Extrai o raio real da análise
+  const analysisRadius = analysisResult?.radius_meters || 1500
+
   return (
     <div className="w-full h-full">
-      <OpenStreetMap center={center} zoom={zoom} markers={markers} />
+      <OpenStreetMap
+        center={center}
+        zoom={zoom}
+        markers={markers}
+        onMapClick={onMapClick}
+        selectedLocation={selectedLocation}
+        analysisRadius={analysisRadius}
+      />
     </div>
   )
 }

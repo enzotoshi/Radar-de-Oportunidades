@@ -26,6 +26,7 @@ from public_data_service import (
     PublicDataUnavailable,
     analyze_public_data,
     list_municipalities,
+    reverse_geocode_location,
     search_location_suggestions,
     search_locations,
 )
@@ -313,6 +314,25 @@ def geocode(
         }
     except (requests.RequestException, PublicDataUnavailable) as exc:
         raise HTTPException(status_code=503, detail=f"Geocodificação indisponível: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/reverse-geocode")
+def reverse_geocode(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+) -> Dict[str, Any]:
+    try:
+        result = reverse_geocode_location(lat, lng)
+        if not result:
+            raise HTTPException(status_code=404, detail="Endereço não identificado para essas coordenadas.")
+        return {
+            "result": result,
+            "source": "Nominatim/OpenStreetMap",
+        }
+    except (requests.RequestException, PublicDataUnavailable) as exc:
+        raise HTTPException(status_code=503, detail=f"Geocodificação reversa indisponível: {exc}") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

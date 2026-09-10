@@ -533,6 +533,59 @@ def search_locations(query: str, limit: int = 5) -> List[Dict[str, Any]]:
     return results
 
 
+def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]:
+    """Resolve coordenadas brasileiras em um endereço e município verificados."""
+    _validate_coordinates(lat, lng)
+    item = _nominatim_get(
+        "reverse",
+        {
+            "lat": lat,
+            "lon": lng,
+            "format": "jsonv2",
+            "addressdetails": 1,
+            "zoom": 18,
+        },
+    )
+    if not isinstance(item, dict) or item.get("error"):
+        return None
+
+    address = item.get("address") or {}
+    if str(address.get("country_code") or "br").lower() != "br":
+        return None
+    city_name = next(
+        (
+            address.get(key)
+            for key in ("municipality", "city", "town", "village")
+            if address.get(key)
+        ),
+        None,
+    )
+    state_code = (address.get("ISO3166-2-lvl4") or "").split("-")[-1] or None
+    municipality = None
+    if city_name:
+        try:
+            city = _find_ibge_city(city_name, state_code)
+            if city:
+                municipality = {
+                    "ibge_code": str(city["id"]),
+                    "name": city["nome"],
+                    "state": state_code,
+                }
+        except (requests.RequestException, ValueError):
+            municipality = None
+
+    return {
+        "place_id": str(item.get("place_id", "")),
+        "display_name": item.get("display_name") or f"{lat:.6f}, {lng:.6f}",
+        # Preserve the exact point selected by the user rather than an OSM
+        # object's centroid returned by reverse geocoding.
+        "lat": lat,
+        "lng": lng,
+        "municipality": municipality,
+        "source": "Nominatim/OpenStreetMap",
+    }
+
+
 def search_location_suggestions(query: str, limit: int = 5) -> List[Dict[str, Any]]:
     """Retorna sugestões reais do Photon/OSM, serviço próprio para autocomplete."""
     cleaned = " ".join(query.split())

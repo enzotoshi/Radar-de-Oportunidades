@@ -116,6 +116,30 @@ class DataPolicyTests(unittest.TestCase):
             result = data.search_locations("São Paulo")
         self.assertEqual(result[0]["municipality"]["ibge_code"], "3550308")
 
+    def test_reverse_geocode_uses_reverse_endpoint_and_preserves_clicked_point(self):
+        payload = {
+            "place_id": 2,
+            "display_name": "Praça da Sé, São Paulo, SP, Brasil",
+            "lat": "-23.5504",
+            "lon": "-46.6332",
+            "address": {
+                "city": "São Paulo",
+                "country_code": "br",
+                "ISO3166-2-lvl4": "BR-SP",
+            },
+        }
+        with (
+            patch.object(data, "_nominatim_get", return_value=payload) as nominatim,
+            patch.object(data, "_find_ibge_city", return_value={"id": 3550308, "nome": "São Paulo"}),
+        ):
+            result = data.reverse_geocode_location(-23.5505, -46.6333)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(nominatim.call_args.args[0], "reverse")
+        self.assertEqual(result["lat"], -23.5505)
+        self.assertEqual(result["lng"], -46.6333)
+        self.assertEqual(result["municipality"]["ibge_code"], "3550308")
+
     def test_simulation_uses_observed_baseline_and_declares_assumptions(self):
         with patch.object(main, "analyze_public_data", return_value=observed_payload()):
             result = main.simulate(
