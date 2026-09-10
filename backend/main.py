@@ -39,13 +39,24 @@ app = FastAPI(
     version="3.0.0",
 )
 
-frontend_url = os.getenv("FRONTEND_URL", "https://enzotoshi.github.io")
-allowed_origins = [
-    frontend_url,
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-]
+def _configured_origins() -> List[str]:
+    """Returns explicitly authorized browser origins for CORS.
+
+    FRONTEND_URL accepts one URL or a comma-separated list. This keeps local
+    development available while allowing the deployed Vercel origin to be
+    configured without changing code.
+    """
+    configured = os.getenv("FRONTEND_URL", "https://enzotoshi.github.io")
+    production_origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+    local_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+    ]
+    return list(dict.fromkeys([*production_origins, *local_origins]))
+
+
+allowed_origins = _configured_origins()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

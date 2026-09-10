@@ -13,9 +13,9 @@ build/
 
 # Environment variables (NÃO COMITAR SUAS CHAVES!)
 .env
-.env.local
-backend/.env
-frontend/.env.local
+.env.*
+!.env.example
+!.env.local.example
 
 # Google Cloud credentials (NÃO COMITAR!)
 google-credentials.json
