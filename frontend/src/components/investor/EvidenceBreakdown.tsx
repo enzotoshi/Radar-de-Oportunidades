@@ -18,7 +18,7 @@ export default function EvidenceBreakdown({ result }: { result: GameResult }) {
       const value = result[key]
       return <div className="evidence-meter" key={key}><div><span><Icon size={17} aria-hidden="true" />{label}</span><strong>{value}<small>/{max}</small></strong></div><div className="evidence-track" role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max}><span className={`evidence-fill evidence-fill--${tone}`} style={{ transform: `scaleX(${value / max})` }} /></div></div>
     })}</div>
-    <div className="evidence-feedback"><h3>Leitura responsável</h3><p>{result.feedback}</p>{result.tips.length > 0 && <ul>{result.tips.map(tip => <li key={tip}>{tip}</li>)}</ul>}</div>
+    {result.tips.length > 0 && <div className="evidence-feedback"><h3>Leitura responsável</h3><ul>{result.tips.map(tip => <li key={tip}>{tip}</li>)}</ul></div>}
     <DetailsSheet title="Metodologia da pontuação"><p>{result.methodology}</p><p>Os componentes são derivados da análise territorial selecionada e mantêm as limitações das fontes originais.</p></DetailsSheet>
     <small>Dados-base coletados em {formatCollectedAt(result.source_analysis_at)}</small>
   </section>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Check, Database, Filter, Radar, Search, Target, Zap } from 'lucide-react'
+import { ArrowRight, BarChart3, Check, Database, Filter, Search, Target, Zap } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import styles from './prisma-hero.module.css'
@@ -51,10 +51,6 @@ export function PrismaHero() {
         <div className={styles.ambientTwo} aria-hidden="true" />
 
         <nav className={styles.nav} aria-label="Navegação principal">
-          <a className={styles.brand} href="#inicio" aria-label="Radar de Oportunidades — início">
-            <span className={styles.brandMark}><Radar size={19} aria-hidden="true" /></span>
-            <span>RADAR</span>
-          </a>
           <div className={styles.navLinks}>
             <a href="#sobre">Sobre</a>
             <a href="#como-funciona">Como funciona</a>
