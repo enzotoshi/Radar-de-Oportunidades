@@ -41,9 +41,14 @@ export default function OpenStreetMap({
   const markersRef = useRef<Marker[]>([])
   const selectionCircleRef = useRef<any | null>(null)
   const leafletRef = useRef<typeof import('leaflet') | null>(null)
+  const onMapClickRef = useRef(onMapClick)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
 
   useEffect(() => {
     let disposed = false
@@ -78,10 +83,10 @@ export default function OpenStreetMap({
         })
 
         // Adiciona handler de clique no mapa
-        if (onMapClick) {
+        if (onMapClickRef.current) {
           map.on('click', (event: any) => {
             const { lat, lng } = event.latlng
-            onMapClick(lat, lng)
+            onMapClickRef.current?.(lat, lng)
           })
         }
 

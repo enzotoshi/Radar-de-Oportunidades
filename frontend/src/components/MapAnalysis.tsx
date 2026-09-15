@@ -51,9 +51,24 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
 
   const handleMapClick = async (lat: number, lng: number) => {
     const version = ++reverseGeocodeVersion.current
+    const coordinateLocation: AddressSuggestion = {
+      place_id: `coordinates-${lat.toFixed(6)}-${lng.toFixed(6)}`,
+      display_name: `Ponto selecionado no mapa (${lat.toFixed(5)}, ${lng.toFixed(5)})`,
+      lat,
+      lng,
+      municipality: null,
+      source: 'Coordenadas selecionadas no mapa',
+    }
     setClickedLocation({ lat, lng })
+    // O ponto clicado é suficiente para a análise. A confirmação do endereço
+    // ocorre em segundo plano e não pode impedir a seleção quando o serviço
+    // público de geocodificação estiver temporariamente limitado.
+    setSelectedLocation(coordinateLocation)
+    setAddress(coordinateLocation.display_name)
+    setSelectedRegion(coordinateLocation.display_name)
+    analysisVersion.current += 1
+    setAnalysisResult(null)
     setError(null)
-    // Não invalida análise aqui - apenas ao receber o endereço
 
     try {
       const result = await reverseGeocode(lat, lng)
@@ -64,17 +79,12 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
         setSelectedLocation(result)
         setAddress(result.display_name)
         setSelectedRegion(result.display_name)
-        // Invalida análise apenas após obter endereço válido
-        analysisVersion.current += 1
-        setAnalysisResult(null)
       } else {
-        setError('Não foi possível identificar um endereço para essa localização. Tente pesquisar um endereço próximo.')
-        setClickedLocation(null)
+        setError('Ponto selecionado, mas o endereço não foi confirmado. Você ainda pode analisar as coordenadas escolhidas.')
       }
     } catch (reason) {
       if (version === reverseGeocodeVersion.current) {
-        setError(getApiError(reason, 'Não foi possível obter o endereço dessa localização.'))
-        setClickedLocation(null)
+        setError('Ponto selecionado. O endereço não pôde ser confirmado agora; a análise usará as coordenadas escolhidas.')
       }
     }
   }
