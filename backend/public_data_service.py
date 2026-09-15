@@ -31,6 +31,7 @@ if os.name == "nt":
 
 
 API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
+OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "25"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
     "https://overpass-api.de/api/interpreter",
@@ -258,10 +259,10 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
     competitor_query = "\n".join(
         _business_selector(rule, radius, lat, lng) for rule in filters
     )
-    # Os pontos de transporte podem chegar aos milhares. Como a interface usa
-    # apenas a quantidade, o Overpass faz essa contagem e não envia todos esses
-    # objetos pela rede. Concorrentes continuam completos para aparecer no mapa.
-    query = f"""[out:json][timeout:18];
+    # Apenas concorrentes precisam chegar ao navegador para aparecer no mapa.
+    # Infraestrutura e mobilidade são usadas somente como totais, portanto o
+    # Overpass as conta no servidor. Isso reduz muito a resposta em áreas densas.
+    query = f"""[out:json][timeout:20];
 (
 {competitor_query}
 )->.competitors;
@@ -274,11 +275,8 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
 {_selector("railway", "station|halt|subway_entrance|tram_stop", radius, lat, lng)}
 {_selector("amenity", "parking|bicycle_parking|taxi", radius, lat, lng)}
 )->.transport;
-(
-.competitors;
-.infrastructure;
-);
-out center tags;
+.competitors out center tags;
+.infrastructure out count;
 .transport out count;"""
     last_error: Optional[Exception] = None
     payload = None
@@ -288,8 +286,10 @@ out center tags;
         endpoints.insert(0, _preferred_overpass_url)
     for endpoint in endpoints:
         try:
-            # Evita que uma instância pública congestionada prenda a interface.
-            response = _session.post(endpoint, data={"data": query}, timeout=(5, 12))
+            # O limite HTTP precisa ser maior que o limite de execução pedido
+            # ao Overpass; antes, uma consulta válida de até 18 s era cancelada
+            # pelo cliente após apenas 12 s.
+            response = _session.post(endpoint, data={"data": query}, timeout=(5, OVERPASS_READ_TIMEOUT))
             response.raise_for_status()
             payload = response.json()
             _preferred_overpass_url = endpoint
@@ -309,16 +309,20 @@ out center tags;
         )
 
     competitors: List[Dict[str, Any]] = []
-    infra_counts = {label: 0 for label in INFRASTRUCTURE_TAGS.values()}
+    infrastructure_count: Optional[int] = None
     transport_count: Optional[int] = None
     all_ids = set()
 
     for element in elements:
         if element.get("type") == "count":
             try:
-                transport_count = int((element.get("tags") or {}).get("total", 0))
+                count = int((element.get("tags") or {}).get("total", 0))
             except (TypeError, ValueError):
-                raise PublicDataUnavailable("Contagem de mobilidade inválida no Overpass.")
+                raise PublicDataUnavailable("Contagem inválida no Overpass.")
+            if infrastructure_count is None:
+                infrastructure_count = count
+            else:
+                transport_count = count
             continue
         element_key = (element.get("type"), element.get("id"))
         if element_key in all_ids:
@@ -341,10 +345,9 @@ out center tags;
                 }
             )
 
-        amenity = tags.get("amenity")
-        if amenity in INFRASTRUCTURE_TAGS:
-            infra_counts[INFRASTRUCTURE_TAGS[amenity]] += 1
     valid_competitors = [item for item in competitors if item["lat"] is not None and item["lng"] is not None]
+    if infrastructure_count is None:
+        raise PublicDataUnavailable("O Overpass não retornou a contagem de infraestrutura.")
     if transport_count is None:
         raise PublicDataUnavailable("O Overpass não retornou a contagem de mobilidade.")
     area_km2 = math.pi * (radius / 1000) ** 2
@@ -352,8 +355,8 @@ out center tags;
         "competitors": valid_competitors,
         "competitor_count": len(valid_competitors),
         "competitor_density": round(len(valid_competitors) / area_km2, 2),
-        "infrastructure": infra_counts,
-        "infrastructure_count": sum(infra_counts.values()),
+        "infrastructure": {"equipamentos_mapeados": infrastructure_count},
+        "infrastructure_count": infrastructure_count,
         "transport_count": transport_count,
         "osm_element_count": len(all_ids),
     })
