@@ -41,7 +41,8 @@ export default function MapComponent({ analysisResult, onMapClick, selectedLocat
         },
         ...analysisResult.business_markers.map((marker) => ({
           position: [marker.lat, marker.lng] as [number, number],
-          title: marker.name + (marker.address ? ' — ' + marker.address : ''),
+          title: marker.name,
+          subtitle: marker.address,
           kind: 'business' as const,
           icon: marker.icon,
         })),

@@ -8,7 +8,7 @@ import type { Map as LeafletMap, Marker } from 'leaflet'
 interface Props {
   center?: [number, number]
   zoom?: number
-  markers?: Array<{ position: [number, number]; title: string; kind?: 'analysis' | 'business'; icon?: string }>
+  markers?: Array<{ position: [number, number]; title: string; subtitle?: string | null; kind?: 'analysis' | 'business'; icon?: string }>
   onMapClick?: (lat: number, lng: number) => void
   selectedLocation?: { lat: number; lng: number } | null
   analysisRadius?: number // raio em metros da área de análise
@@ -118,7 +118,7 @@ export default function OpenStreetMap({
     if (!ready || !map || !L) return
     markersRef.current.forEach((marker) => marker.remove())
     markersRef.current = markers.map(
-      ({ position, title, kind = 'analysis', icon }) => {
+      ({ position, title, subtitle, kind = 'analysis', icon }) => {
         const dot = document.createElement('div')
         dot.className = `map-marker map-marker--${kind}`
         if (kind === 'business') {
@@ -132,11 +132,25 @@ export default function OpenStreetMap({
           iconSize: isBusiness ? [32, 32] : [24, 24],
           iconAnchor: isBusiness ? [16, 28] : [12, 12],
         })
-        const popup = document.createElement('span')
-        popup.textContent = title
+        const popup = document.createElement('div')
+        popup.className = 'map-popup'
+        const popupTitle = document.createElement('strong')
+        popupTitle.textContent = title
+        popup.append(popupTitle)
+        if (subtitle) {
+          const popupSubtitle = document.createElement('span')
+          popupSubtitle.textContent = subtitle
+          popup.append(popupSubtitle)
+        }
         return L.marker(position, { icon: markerIcon, title })
           .addTo(map)
-          .bindPopup(popup)
+          .bindPopup(popup, {
+            className: 'map-popup-shell',
+            closeButton: true,
+            autoClose: true,
+            closeOnClick: true,
+            offset: L.point(0, -8),
+          })
       }
     )
   }, [ready, markers])
