@@ -160,8 +160,8 @@ export default function OpenStreetMap({
         [selectedLocation.lat, selectedLocation.lng],
         {
           radius: analysisRadius, // raio real da análise em metros
-          color: '#087b55',
-          fillColor: '#087b55',
+          color: '#35b9ac',
+          fillColor: '#35b9ac',
           fillOpacity: 0.15,
           weight: 2,
           opacity: 0.7,
@@ -174,7 +174,7 @@ export default function OpenStreetMap({
         {
           radius: 6,
           color: '#ffffff',
-          fillColor: '#087b55',
+          fillColor: '#35b9ac',
           fillOpacity: 1,
           weight: 2,
         }

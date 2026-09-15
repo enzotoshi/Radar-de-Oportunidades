@@ -1,14 +1,23 @@
 :root {
-  --primitive-petrol-950: #0b2930;
-  --primitive-petrol-900: #10363d;
+  /* Mesma base cromática da introdução Prisma Hero. */
+  --primitive-radar-night: #07191d;
+  --primitive-radar-panel: #0b2428;
+  --primitive-radar-mint: #8fe3b2;
+  --primitive-radar-mint-bright: #b8f4cf;
+  --primitive-radar-mint-hover: #d1fbe0;
+  --primitive-radar-teal: #35b9ac;
+  --primitive-radar-teal-deep: #208f84;
+  --primitive-radar-muted: #9bb8b4;
+  --primitive-petrol-950: var(--primitive-radar-night);
+  --primitive-petrol-900: var(--primitive-radar-panel);
   --primitive-petrol-800: #17464d;
-  --primitive-teal-700: #087f78;
-  --primitive-teal-800: #066861;
-  --primitive-teal-100: #d8f0ec;
+  --primitive-teal-700: var(--primitive-radar-teal);
+  --primitive-teal-800: var(--primitive-radar-teal-deep);
+  --primitive-teal-100: #e0f7ea;
   --primitive-blue-700: #176b9a;
   --primitive-blue-100: #dcecf5;
-  --primitive-mist-50: #f4f8f7;
-  --primitive-mist-100: #e9f0ee;
+  --primitive-mist-50: #f4faf6;
+  --primitive-mist-100: #e8f2ec;
   --primitive-white: #ffffff;
   --primitive-ink-900: #102d32;
   --primitive-ink-600: #50666a;
@@ -30,8 +39,14 @@
   --color-surface-muted: var(--primitive-mist-100);
   --color-ink: var(--primitive-ink-900);
   --color-ink-muted: var(--primitive-ink-600);
-  --color-border: #cad8d5;
-  --color-border-strong: #9fb4b2;
+  --color-border: #c6dccd;
+  --color-border-strong: #91b7a6;
+  --color-brand-mint: var(--primitive-radar-mint);
+  --color-brand-mint-bright: var(--primitive-radar-mint-bright);
+  --color-brand-mint-hover: var(--primitive-radar-mint-hover);
+  --color-on-structure: #effbf6;
+  --color-on-structure-muted: var(--primitive-radar-muted);
+  --color-action-contrast: #00130f;
   --color-warning: var(--primitive-amber-700);
   --color-warning-soft: var(--primitive-amber-100);
   --color-danger: var(--primitive-red-700);
@@ -64,8 +79,8 @@
   --control-height: 2.75rem;
   --header-height: 4.5rem;
   --content-max: 112rem;
-  --shadow-panel: 0 12px 36px rgba(11, 41, 48, .1);
-  --shadow-overlay: 0 18px 56px rgba(11, 41, 48, .18);
+  --shadow-panel: 0 12px 36px rgba(7, 25, 29, .1);
+  --shadow-overlay: 0 18px 56px rgba(7, 25, 29, .18);
   --motion-instant: 100ms;
   --motion-fast: 180ms;
   --motion-base: 260ms;

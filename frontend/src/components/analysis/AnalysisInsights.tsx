@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Lightbulb, X } from 'lucide-react'
+import { ArrowRight, Lightbulb, X } from 'lucide-react'
 import type { AnalysisResult } from '@/types'
 import Button from '../shared/Button'
 import IconButton from '../shared/IconButton'
@@ -22,7 +22,6 @@ export default function AnalysisInsights({ result, onClear, onGoToInvestor }: { 
     <section className="insight-group" aria-labelledby="signals-title"><h3 id="signals-title">Sinais que formam o índice</h3><div className="metric-signal-list">{primary.map(([key, metric]) => <MetricSignal key={key} metricKey={key} metric={metric} emphasis="primary" />)}</div></section>
     {secondary.length > 0 && <section className="insight-group" aria-labelledby="context-title"><h3 id="context-title">Contexto do território</h3><div className="metric-signal-list">{secondary.map(([key, metric]) => <MetricSignal key={key} metricKey={key} metric={metric} />)}</div></section>}
     <section className="insight-reading"><h3>Como interpretar</h3><p>{result.explanation}</p></section>
-    {result.warnings.length > 0 && <div className="insight-warnings">{result.warnings.map(warning => <p key={warning}><AlertTriangle size={16} aria-hidden="true" />{warning}</p>)}</div>}
     <ProvenanceDialog result={result} />
     <Button type="button" onClick={onGoToInvestor}>Levar ao modo investidor <ArrowRight size={17} aria-hidden="true" /></Button>
   </aside>
