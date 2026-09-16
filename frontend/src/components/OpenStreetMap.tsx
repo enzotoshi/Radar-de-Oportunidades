@@ -133,9 +133,8 @@ export default function OpenStreetMap({
             if (disposed) return
             map.invalidateSize()
             if (initialViewRef.current.zoom <= 4) {
-              map.setMinZoom(0)
-              map.fitBounds(southAmericaBounds, { padding: [20, 20], animate: false })
-              map.setMinZoom(map.getZoom())
+              map.setView(initialViewRef.current.center, initialViewRef.current.zoom, { animate: false })
+              map.setMinZoom(initialViewRef.current.zoom)
             }
             setReady(true)
           }, 100)
@@ -168,8 +167,8 @@ export default function OpenStreetMap({
     const L = leafletRef.current
     if (!ready || !map || !L) return
     if (zoom <= 4) {
-      map.fitBounds(L.latLngBounds(SOUTH_AMERICA_BOUNDS), { padding: [20, 20], animate: !reducedMotion })
-      map.setMinZoom(map.getZoom())
+      map.setView(center, zoom, { animate: !reducedMotion })
+      map.setMinZoom(zoom)
     } else {
       map.setView(center, zoom, { animate: !reducedMotion })
     }

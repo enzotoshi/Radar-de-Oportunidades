@@ -14,7 +14,7 @@ interface MapComponentProps {
 }
 
 export default function MapComponent({ analysisResult, onMapClick, onUnavailableClick, selectedLocation }: MapComponentProps) {
-  const [center, setCenter] = useState<[number, number]>([-14.2, -51.9])
+  const [center, setCenter] = useState<[number, number]>([-15.0, -60.0])
   const [zoom, setZoom] = useState(4)
   const selectedLat = selectedLocation?.lat
   const selectedLng = selectedLocation?.lng
