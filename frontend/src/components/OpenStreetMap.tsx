@@ -86,10 +86,10 @@ export default function OpenStreetMap({
           worldCopyJump: false,
           zoomSnap: 0.5, // permite zooms intermediários
         })
-        map.setMinZoom(map.getBoundsZoom(southAmericaBounds))
 
         if (initialViewRef.current.zoom <= 4) {
           map.fitBounds(southAmericaBounds, { padding: [20, 20], animate: false })
+          map.setMinZoom(map.getZoom())
         } else {
           map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
         }
@@ -98,24 +98,24 @@ export default function OpenStreetMap({
           attribution:
             '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
-          minZoom: map.getMinZoom(),
+          minZoom: 1,
           noWrap: true,
           tileSize: 256,
           updateWhenZooming: false,
         }).addTo(map)
 
-        const worldRing: [number, number][] = [
-          [-90, -180],
-          [-90, 180],
-          [90, 180],
-          [90, -180],
+        const maskRing: [number, number][] = [
+          [-60, -90],
+          [-60, -25],
+          [20, -25],
+          [20, -90],
         ]
         const brazilRings = brazilBoundary.features.flatMap(feature =>
           feature.geometry.coordinates.map(polygon =>
             polygon[0].map(([lng, lat]) => [lat, lng] as [number, number])
           )
         )
-        L.polygon([worldRing, ...brazilRings], {
+        L.polygon([maskRing, ...brazilRings], {
           stroke: false,
           fillColor: '#a9d5e3',
           fillOpacity: 1,
