@@ -87,12 +87,7 @@ export default function OpenStreetMap({
           zoomSnap: 0.5, // permite zooms intermediários
         })
 
-        if (initialViewRef.current.zoom <= 4) {
-          map.fitBounds(southAmericaBounds, { padding: [20, 20], animate: false })
-          map.setMinZoom(map.getZoom())
-        } else {
-          map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
-        }
+        map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution:
@@ -130,10 +125,19 @@ export default function OpenStreetMap({
           },
         }).addTo(map)
 
-        // Força o mapa a recalcular quando o container muda
+        // O primeiro enquadramento precisa acontecer depois que o container
+        // recebe suas dimensões finais; antes disso o Leaflet pode abrir no
+        // nível mundial e expor tiles fora da máscara.
         map.whenReady(() => {
           setTimeout(() => {
+            if (disposed) return
             map.invalidateSize()
+            if (initialViewRef.current.zoom <= 4) {
+              map.setMinZoom(0)
+              map.fitBounds(southAmericaBounds, { padding: [20, 20], animate: false })
+              map.setMinZoom(map.getZoom())
+            }
+            setReady(true)
           }, 100)
         })
 
@@ -148,7 +152,6 @@ export default function OpenStreetMap({
         mapInstanceRef.current = map
         resizeObserver = new ResizeObserver(() => map.invalidateSize())
         resizeObserver.observe(mapRef.current)
-        setReady(true)
       })
       .catch(() => {
         if (!disposed) setError(true)
