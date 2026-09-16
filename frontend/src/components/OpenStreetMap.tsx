@@ -10,6 +10,7 @@ interface Props {
   zoom?: number
   markers?: Array<{ position: [number, number]; title: string; subtitle?: string | null; kind?: 'analysis' | 'business'; icon?: string }>
   onMapClick?: (lat: number, lng: number) => void
+  onUnavailableClick?: () => void
   selectedLocation?: { lat: number; lng: number } | null
   analysisRadius?: number // raio em metros da área de análise
 }
@@ -30,6 +31,25 @@ const SOUTH_AMERICA_BOUNDS: [[number, number], [number, number]] = [
   [13.0, -34.0],
 ]
 
+function isPointInRing(lat: number, lng: number, ring: number[][]) {
+  let inside = false
+  for (let current = 0, previous = ring.length - 1; current < ring.length; previous = current++) {
+    const [currentLng, currentLat] = ring[current]
+    const [previousLng, previousLat] = ring[previous]
+    const crossesLatitude = (currentLat > lat) !== (previousLat > lat)
+    const intersectionLng = ((previousLng - currentLng) * (lat - currentLat)) / (previousLat - currentLat) + currentLng
+    if (crossesLatitude && lng < intersectionLng) inside = !inside
+  }
+  return inside
+}
+
+function isInsideBrazil(boundary: BrazilBoundary, lat: number, lng: number) {
+  return boundary.features.some(feature => feature.geometry.coordinates.some(polygon => {
+    const [outerRing, ...holes] = polygon
+    return isPointInRing(lat, lng, outerRing) && !holes.some(hole => isPointInRing(lat, lng, hole))
+  }))
+}
+
 // One shared load also handles React Strict Mode mounting twice in development.
 let leafletLoad: Promise<typeof import('leaflet')> | null = null
 function loadLeaflet() {
@@ -47,6 +67,7 @@ export default function OpenStreetMap({
   zoom = 12,
   markers = [],
   onMapClick,
+  onUnavailableClick,
   selectedLocation,
   analysisRadius = 1500, // padrão 1500m conforme backend
 }: Props) {
@@ -58,6 +79,7 @@ export default function OpenStreetMap({
   const selectionCircleRef = useRef<any | null>(null)
   const leafletRef = useRef<typeof import('leaflet') | null>(null)
   const onMapClickRef = useRef(onMapClick)
+  const onUnavailableClickRef = useRef(onUnavailableClick)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -65,6 +87,10 @@ export default function OpenStreetMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick
   }, [onMapClick])
+
+  useEffect(() => {
+    onUnavailableClickRef.current = onUnavailableClick
+  }, [onUnavailableClick])
 
   useEffect(() => {
     let disposed = false
@@ -99,32 +125,6 @@ export default function OpenStreetMap({
           updateWhenZooming: false,
         }).addTo(map)
 
-        const maskRing: [number, number][] = [
-          [-60, -90],
-          [-60, -25],
-          [20, -25],
-          [20, -90],
-        ]
-        const brazilRings = brazilBoundary.features.flatMap(feature =>
-          feature.geometry.coordinates.map(polygon =>
-            polygon[0].map(([lng, lat]) => [lat, lng] as [number, number])
-          )
-        )
-        L.polygon([maskRing, ...brazilRings], {
-          stroke: false,
-          fillColor: '#a9d5e3',
-          fillOpacity: 1,
-          fillRule: 'evenodd',
-          interactive: false,
-        }).addTo(map)
-
-        const brazilLayer = L.geoJSON(brazilBoundary as any, {
-          style: {
-            stroke: false,
-            fillOpacity: 0,
-          },
-        }).addTo(map)
-
         // O primeiro enquadramento precisa acontecer depois que o container
         // recebe suas dimensões finais; antes disso o Leaflet pode abrir no
         // nível mundial e expor tiles fora da máscara.
@@ -141,13 +141,11 @@ export default function OpenStreetMap({
           }, 100)
         })
 
-        // A própria fronteira define a área válida para selecionar um ponto.
-        if (onMapClickRef.current) {
-          brazilLayer.on('click', (event: any) => {
-            const { lat, lng } = event.latlng
-            onMapClickRef.current?.(lat, lng)
-          })
-        }
+        map.on('click', (event: any) => {
+          const { lat, lng } = event.latlng
+          if (isInsideBrazil(brazilBoundary, lat, lng)) onMapClickRef.current?.(lat, lng)
+          else onUnavailableClickRef.current?.()
+        })
 
         mapInstanceRef.current = map
         resizeObserver = new ResizeObserver(() => map.invalidateSize())
@@ -270,7 +268,7 @@ export default function OpenStreetMap({
       <div
         ref={mapRef}
         className="w-full h-full"
-        aria-label="Mapa interativo do Brasil"
+        aria-label="Mapa interativo da região"
       />
       {!ready && (
         <div

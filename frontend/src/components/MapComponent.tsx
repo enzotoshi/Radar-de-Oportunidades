@@ -9,10 +9,11 @@ const OpenStreetMap = dynamic(() => import('./OpenStreetMap'), { ssr: false })
 interface MapComponentProps {
   analysisResult: AnalysisResult | null
   onMapClick?: (lat: number, lng: number) => void
+  onUnavailableClick?: () => void
   selectedLocation?: { lat: number; lng: number } | null
 }
 
-export default function MapComponent({ analysisResult, onMapClick, selectedLocation }: MapComponentProps) {
+export default function MapComponent({ analysisResult, onMapClick, onUnavailableClick, selectedLocation }: MapComponentProps) {
   const [center, setCenter] = useState<[number, number]>([-14.2, -51.9])
   const [zoom, setZoom] = useState(4)
   const selectedLat = selectedLocation?.lat
@@ -59,6 +60,7 @@ export default function MapComponent({ analysisResult, onMapClick, selectedLocat
         zoom={zoom}
         markers={markers}
         onMapClick={onMapClick}
+        onUnavailableClick={onUnavailableClick}
         selectedLocation={selectedLocation}
         analysisRadius={analysisRadius}
       />

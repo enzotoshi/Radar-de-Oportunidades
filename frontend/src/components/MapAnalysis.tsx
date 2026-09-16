@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Crosshair, Info, PanelRightOpen } from 'lucide-react'
+import { Crosshair, Info, MapPin, PanelRightOpen } from 'lucide-react'
 import { analyzeOpportunity, getApiError, reverseGeocode } from '@/lib/api'
 import { parseBudgetInput } from '@/lib/formatters'
 import type { AddressSuggestion, AnalysisResult } from '@/types'
@@ -125,9 +125,10 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
         <div className="map-canvas"><MapComponent
           analysisResult={analysisResult}
           onMapClick={handleMapClick}
+          onUnavailableClick={() => setError('Indisponível atualmente. As análises funcionam apenas no Brasil.')}
           selectedLocation={clickedLocation || (selectedLocation ? { lat: selectedLocation.lat, lng: selectedLocation.lng } : null)}
         /></div>
-        <div className="territory-label" aria-label="Análises disponíveis apenas no Brasil"><span className="country-flag" aria-hidden="true">🇧🇷</span><span><strong>Disponível no Brasil</strong><small>Selecione um ponto dentro do país</small></span></div>
+        <div className="territory-label"><MapPin size={18} aria-hidden="true" /><span>{analysisResult?.location.municipality?.name || 'Brasil'}<small>{analysisResult ? 'Território consultado' : 'Visão do território'}</small></span></div>
         <div className="map-legend" aria-label="Legenda do mapa"><span><i className="business-key" />Estabelecimentos OSM</span><span><i className="location-key" />Ponto analisado</span><span><Crosshair size={14} aria-hidden="true" />Raio de 1,5 km</span></div>
         <div className="map-context"><Info size={17} aria-hidden="true" /><p>{analysisResult ? 'Ausência de marcador não comprova ausência de estabelecimento.' : 'O mapa organiza os sinais públicos; valide decisões importantes em campo.'}</p></div>
       </section>
