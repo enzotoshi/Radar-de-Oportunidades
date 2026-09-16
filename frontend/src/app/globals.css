@@ -595,8 +595,8 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .domain-heading > p { max-width: 42rem; margin-top: var(--space-3); color: var(--color-ink-muted); }
 .analysis-required { min-height: 32rem; display: grid; grid-template-columns: minmax(18rem,.8fr) minmax(0,1fr); overflow: hidden; background: white; border: 1px solid var(--color-border); border-radius: var(--radius-large); box-shadow: var(--shadow-panel); }
 .required-visual { display: grid; place-items: center; align-content: center; gap: var(--space-4); color: #c8dcda; background: var(--color-structure); }
-.required-radar { width: 12rem; height: 12rem; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; background: radial-gradient(circle, rgba(8,127,120,.34), transparent 68%); }
-.required-radar img { width: 8rem; height: 8rem; object-fit: contain; }
+.required-radar { width: 16rem; height: 16rem; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; background: radial-gradient(circle, rgba(8,127,120,.34), transparent 68%); }
+.required-radar img { width: 11rem; height: 11rem; object-fit: contain; }
 .required-action { padding: clamp(2rem,6vw,5rem); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 .required-action h2 { margin-top: var(--space-4); }
 .required-action > p { max-width: 36rem; margin: var(--space-4) 0 var(--space-6); color: var(--color-ink-muted); }
@@ -666,8 +666,8 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
   .domain-heading { margin-bottom: var(--space-5); }
   .analysis-required { min-height: auto; grid-template-columns: 1fr; }
   .required-visual { min-height: 12rem; }
-  .required-radar { width: 8rem; height: 8rem; }
-  .required-radar img { width: 5rem; height: 5rem; }
+  .required-radar { width: 10rem; height: 10rem; }
+  .required-radar img { width: 6.5rem; height: 6.5rem; }
   .required-action { padding: var(--space-6) var(--space-5); }
   .scenario-context { grid-template-columns: 1fr; gap: var(--space-4); }
   .scenario-context > div:last-child { padding: var(--space-4) 0 0; border-left: 0; border-top: 1px solid rgba(255,255,255,.2); }
