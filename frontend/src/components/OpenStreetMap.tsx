@@ -14,10 +14,16 @@ interface Props {
   analysisRadius?: number // raio em metros da área de análise
 }
 
-const BRAZIL_BOUNDS: [[number, number], [number, number]] = [
-  [-33.8, -74.0],
-  [5.3, -34.8],
-]
+interface BrazilBoundary {
+  type: 'FeatureCollection'
+  features: Array<{
+    type: 'Feature'
+    geometry: {
+      type: 'MultiPolygon'
+      coordinates: number[][][][]
+    }
+  }>
+}
 
 const SOUTH_AMERICA_BOUNDS: [[number, number], [number, number]] = [
   [-56.0, -82.0],
@@ -66,10 +72,13 @@ export default function OpenStreetMap({
     setError(false)
     setReady(false)
     loadLeaflet()
-      .then((L) => {
+      .then(async (L) => {
+        if (disposed || !mapRef.current) return
+        const boundaryResponse = await fetch('/data/brazil-boundary.geojson')
+        if (!boundaryResponse.ok) throw new Error('Não foi possível carregar os limites do Brasil.')
+        const brazilBoundary = await boundaryResponse.json() as BrazilBoundary
         if (disposed || !mapRef.current) return
         leafletRef.current = L
-        const brazilBounds = L.latLngBounds(BRAZIL_BOUNDS)
         const southAmericaBounds = L.latLngBounds(SOUTH_AMERICA_BOUNDS)
         const map = L.map(mapRef.current, {
           maxBounds: southAmericaBounds,
@@ -95,6 +104,34 @@ export default function OpenStreetMap({
           updateWhenZooming: false,
         }).addTo(map)
 
+        const worldRing: [number, number][] = [
+          [-90, -180],
+          [-90, 180],
+          [90, 180],
+          [90, -180],
+        ]
+        const brazilRings = brazilBoundary.features.flatMap(feature =>
+          feature.geometry.coordinates.map(polygon =>
+            polygon[0].map(([lng, lat]) => [lat, lng] as [number, number])
+          )
+        )
+        L.polygon([worldRing, ...brazilRings], {
+          stroke: false,
+          fillColor: '#eef3f1',
+          fillOpacity: 1,
+          fillRule: 'evenodd',
+          interactive: false,
+        }).addTo(map)
+
+        const brazilLayer = L.geoJSON(brazilBoundary as any, {
+          style: {
+            color: '#087f78',
+            weight: 2,
+            opacity: 0.8,
+            fillOpacity: 0,
+          },
+        }).addTo(map)
+
         // Força o mapa a recalcular quando o container muda
         map.whenReady(() => {
           setTimeout(() => {
@@ -102,11 +139,11 @@ export default function OpenStreetMap({
           }, 100)
         })
 
-        // Adiciona handler de clique no mapa
+        // A própria fronteira define a área válida para selecionar um ponto.
         if (onMapClickRef.current) {
-          map.on('click', (event: any) => {
+          brazilLayer.on('click', (event: any) => {
             const { lat, lng } = event.latlng
-            if (brazilBounds.contains(event.latlng)) onMapClickRef.current?.(lat, lng)
+            onMapClickRef.current?.(lat, lng)
           })
         }
 
@@ -232,7 +269,7 @@ export default function OpenStreetMap({
       <div
         ref={mapRef}
         className="w-full h-full"
-        aria-label="Mapa interativo da região"
+        aria-label="Mapa interativo do Brasil"
       />
       {!ready && (
         <div
