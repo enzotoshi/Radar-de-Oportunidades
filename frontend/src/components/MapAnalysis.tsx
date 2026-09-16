@@ -27,6 +27,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
   const [selectedLocation, setSelectedLocation] = useState<AddressSuggestion | null>(null)
   const [budget, setBudget] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
+  const [resolvingMapLocation, setResolvingMapLocation] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(true)
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -39,8 +40,10 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     setAnalysisResult(null)
     setClickedLocation(null)
   }
-  const changeAddress = (value: string) => { setAddress(value); setSelectedLocation(null); invalidateAnalysis() }
+  const changeAddress = (value: string) => { reverseGeocodeVersion.current += 1; setResolvingMapLocation(false); setAddress(value); setSelectedLocation(null); invalidateAnalysis() }
   const chooseLocation = (location: AddressSuggestion) => {
+    reverseGeocodeVersion.current += 1
+    setResolvingMapLocation(false)
     setSelectedLocation(location)
     setAddress(location.display_name)
     setSelectedRegion(location.display_name)
@@ -51,6 +54,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
 
   const handleMapClick = async (lat: number, lng: number) => {
     const version = ++reverseGeocodeVersion.current
+    const pendingLabel = 'Buscando rua próxima...'
     const coordinateLocation: AddressSuggestion = {
       place_id: `coordinates-${lat.toFixed(6)}-${lng.toFixed(6)}`,
       display_name: `Ponto selecionado no mapa (${lat.toFixed(5)}, ${lng.toFixed(5)})`,
@@ -60,13 +64,12 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
       source: 'Coordenadas selecionadas no mapa',
     }
     setClickedLocation({ lat, lng })
-    // O ponto clicado é suficiente para a análise. A confirmação do endereço
-    // ocorre em segundo plano e não pode impedir a seleção quando o serviço
-    // público de geocodificação estiver temporariamente limitado.
-    setSelectedLocation(coordinateLocation)
-    setAddress(coordinateLocation.display_name)
-    setSelectedRegion(coordinateLocation.display_name)
+    setResolvingMapLocation(true)
+    setSelectedLocation({ ...coordinateLocation, display_name: pendingLabel })
+    setAddress(pendingLabel)
+    setSelectedRegion(pendingLabel)
     analysisVersion.current += 1
+    setAnalyzing(false)
     setAnalysisResult(null)
     setError(null)
 
@@ -80,16 +83,24 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
         setAddress(result.display_name)
         setSelectedRegion(result.display_name)
       } else {
-        setError('Ponto selecionado, mas o endereço não foi confirmado. Você ainda pode analisar as coordenadas escolhidas.')
+        setSelectedLocation(coordinateLocation)
+        setAddress(coordinateLocation.display_name)
+        setSelectedRegion(coordinateLocation.display_name)
       }
-    } catch (reason) {
+    } catch {
       if (version === reverseGeocodeVersion.current) {
+        setSelectedLocation(coordinateLocation)
+        setAddress(coordinateLocation.display_name)
+        setSelectedRegion(coordinateLocation.display_name)
         setError('Ponto selecionado. O endereço não pôde ser confirmado agora; a análise usará as coordenadas escolhidas.')
       }
+    } finally {
+      if (version === reverseGeocodeVersion.current) setResolvingMapLocation(false)
     }
   }
 
   const handleAnalyze = async () => {
+    if (resolvingMapLocation) return
     if (!selectedLocation) { setError('Busque e selecione uma localização verificada antes de analisar.'); return }
     if (!selectedBusiness) { setError('Selecione um tipo de negócio.'); return }
     const version = ++analysisVersion.current
@@ -120,7 +131,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
       {analysisResult && <Button variant="secondary" size="compact" className="insights-toggle" aria-expanded={insightsOpen} aria-controls="analysis-insights" onClick={() => setInsightsOpen(value => !value)}><PanelRightOpen size={17} aria-hidden="true" />{insightsOpen ? 'Ocultar evidências' : 'Ver evidências'}</Button>}
     </div>
     <div className="atlas-workspace" data-has-result={Boolean(analysisResult)}>
-      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
+      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} resolvingLocation={resolvingMapLocation} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
       <section className="atlas-map" aria-label="Mapa com dados observados">
         <div className="map-canvas"><MapComponent
           analysisResult={analysisResult}

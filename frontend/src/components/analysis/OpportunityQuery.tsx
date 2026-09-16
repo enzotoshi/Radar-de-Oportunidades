@@ -16,6 +16,7 @@ interface OpportunityQueryProps {
   selectedBusiness: string
   budget: string
   analyzing: boolean
+  resolvingLocation: boolean
   error: string | null
   onAddressChange: (value: string) => void
   onLocationSelect: (value: AddressSuggestion) => void
@@ -33,7 +34,7 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
     getBusinesses().then(setBusinesses).catch(reason => props.onError(getApiError(reason, 'Não foi possível carregar os tipos de negócio.'))).finally(() => setLoadingBusinesses(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <section className="atlas-query" aria-label="Configurar análise" aria-busy={props.analyzing}>
+  return <section className="atlas-query" aria-label="Configurar análise" aria-busy={props.analyzing || props.resolvingLocation}>
     <header className="query-header"><span className="section-kicker"><Database size={15} aria-hidden="true" />Nova consulta</span><h2>Onde está a próxima oportunidade?</h2><p>Combine território, categoria e investimento para consultar dados públicos.</p></header>
     <div className="query-fields">
       <AddressCombobox value={props.address} selected={props.selectedLocation} onValueChange={props.onAddressChange} onSelect={props.onLocationSelect} onError={props.onError} />
@@ -44,6 +45,6 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
       </div>
       {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
     </div>
-    <footer className="query-action"><Button type="button" busy={props.analyzing} onClick={props.onAnalyze}>{props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button></footer>
+    <footer className="query-action"><Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando rua próxima...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button></footer>
   </section>
 }

@@ -122,7 +122,9 @@ class DataPolicyTests(unittest.TestCase):
             "display_name": "Praça da Sé, São Paulo, SP, Brasil",
             "lat": "-23.5504",
             "lon": "-46.6332",
+            "boundingbox": ["-23.551", "-23.550", "-46.634", "-46.633"],
             "address": {
+                "road": "Praça da Sé",
                 "city": "São Paulo",
                 "country_code": "br",
                 "ISO3166-2-lvl4": "BR-SP",
@@ -136,9 +138,44 @@ class DataPolicyTests(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertEqual(nominatim.call_args.args[0], "reverse")
+        self.assertEqual(nominatim.call_args.args[1]["zoom"], 17)
+        self.assertEqual(nominatim.call_args.args[1]["layer"], "address")
+        self.assertEqual(result["display_name"], "Praça da Sé, São Paulo - SP")
         self.assertEqual(result["lat"], -23.5505)
         self.assertEqual(result["lng"], -46.6333)
         self.assertEqual(result["municipality"]["ibge_code"], "3550308")
+
+    def test_reverse_geocode_returns_none_without_a_nearby_street(self):
+        payload = {
+            "place_id": 3,
+            "display_name": "Área rural, São Paulo, Brasil",
+            "address": {
+                "city": "São Paulo",
+                "country_code": "br",
+                "ISO3166-2-lvl4": "BR-SP",
+            },
+        }
+        with patch.object(data, "_nominatim_get", return_value=payload):
+            result = data.reverse_geocode_location(-23.5505, -46.6333)
+
+        self.assertIsNone(result)
+
+    def test_reverse_geocode_rejects_a_distant_street(self):
+        payload = {
+            "place_id": 4,
+            "display_name": "Rua Distante, São Paulo, Brasil",
+            "boundingbox": ["-23.5601", "-23.5599", "-46.6401", "-46.6399"],
+            "address": {
+                "road": "Rua Distante",
+                "city": "São Paulo",
+                "country_code": "br",
+                "ISO3166-2-lvl4": "BR-SP",
+            },
+        }
+        with patch.object(data, "_nominatim_get", return_value=payload):
+            result = data.reverse_geocode_location(-23.5505, -46.6333)
+
+        self.assertIsNone(result)
 
     def test_simulation_uses_observed_baseline_and_declares_assumptions(self):
         with patch.object(main, "analyze_public_data", return_value=observed_payload()):

@@ -537,7 +537,7 @@ def search_locations(query: str, limit: int = 5) -> List[Dict[str, Any]]:
 
 
 def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]:
-    """Resolve coordenadas brasileiras em um endereço e município verificados."""
+    """Resolve a via próxima ao ponto clicado, preservando suas coordenadas."""
     _validate_coordinates(lat, lng)
     item = _nominatim_get(
         "reverse",
@@ -546,7 +546,8 @@ def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]
             "lon": lng,
             "format": "jsonv2",
             "addressdetails": 1,
-            "zoom": 18,
+            "zoom": 17,
+            "layer": "address",
         },
     )
     if not isinstance(item, dict) or item.get("error"):
@@ -554,6 +555,32 @@ def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]
 
     address = item.get("address") or {}
     if str(address.get("country_code") or "br").lower() != "br":
+        return None
+    street = next(
+        (address[key].strip() for key in ("road", "pedestrian", "footway", "path", "cycleway")
+         if isinstance(address.get(key), str) and address[key].strip()),
+        None,
+    )
+    if not street:
+        return None
+
+    # A resposta pode conter uma via distante quando não há dados perto do clique.
+    # O limite usa a menor distância até a área do objeto OSM retornado.
+    try:
+        if item.get("boundingbox"):
+            south, north, west, east = (float(value) for value in item["boundingbox"])
+            closest_lat = min(max(lat, south), north)
+            closest_lng = min(max(lng, west), east)
+        else:
+            closest_lat = float(item["lat"])
+            closest_lng = float(item["lon"])
+        distance_m = math.hypot(
+            (lat - closest_lat) * 111_320,
+            (lng - closest_lng) * 111_320 * math.cos(math.radians(lat)),
+        )
+        if distance_m > 250:
+            return None
+    except (KeyError, TypeError, ValueError):
         return None
     city_name = next(
         (
@@ -564,6 +591,9 @@ def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]
         None,
     )
     state_code = (address.get("ISO3166-2-lvl4") or "").split("-")[-1] or None
+    display_name = ", ".join(part for part in (street, city_name) if part)
+    if state_code:
+        display_name = f"{display_name} - {state_code}"
     municipality = None
     if city_name:
         try:
@@ -579,7 +609,7 @@ def reverse_geocode_location(lat: float, lng: float) -> Optional[Dict[str, Any]]
 
     return {
         "place_id": str(item.get("place_id", "")),
-        "display_name": item.get("display_name") or f"{lat:.6f}, {lng:.6f}",
+        "display_name": display_name,
         # Preserve the exact point selected by the user rather than an OSM
         # object's centroid returned by reverse geocoding.
         "lat": lat,
