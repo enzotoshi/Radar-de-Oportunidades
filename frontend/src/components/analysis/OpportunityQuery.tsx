@@ -45,6 +45,6 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
       </div>
       {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
     </div>
-    <footer className="query-action"><Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando rua próxima...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button></footer>
+    <footer className="query-action"><Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button></footer>
   </section>
 }

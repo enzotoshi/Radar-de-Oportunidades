@@ -54,7 +54,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
 
   const handleMapClick = async (lat: number, lng: number) => {
     const version = ++reverseGeocodeVersion.current
-    const pendingLabel = 'Buscando rua próxima...'
+    const pendingLabel = 'Buscando...'
     const coordinateLocation: AddressSuggestion = {
       place_id: `coordinates-${lat.toFixed(6)}-${lng.toFixed(6)}`,
       display_name: `Ponto selecionado no mapa (${lat.toFixed(5)}, ${lng.toFixed(5)})`,
