@@ -14,6 +14,11 @@ interface Props {
   analysisRadius?: number // raio em metros da área de análise
 }
 
+const BRAZIL_BOUNDS: [[number, number], [number, number]] = [
+  [-33.8, -74.0],
+  [5.3, -34.8],
+]
+
 // One shared load also handles React Strict Mode mounting twice in development.
 let leafletLoad: Promise<typeof import('leaflet')> | null = null
 function loadLeaflet() {
@@ -59,18 +64,27 @@ export default function OpenStreetMap({
       .then((L) => {
         if (disposed || !mapRef.current) return
         leafletRef.current = L
+        const brazilBounds = L.latLngBounds(BRAZIL_BOUNDS)
         const map = L.map(mapRef.current, {
-          minZoom: 2,
-          worldCopyJump: true,
+          maxBounds: brazilBounds,
+          maxBoundsViscosity: 1,
+          worldCopyJump: false,
           zoomSnap: 0.5, // permite zooms intermediários
-        }).setView(initialViewRef.current.center, initialViewRef.current.zoom)
+        })
+        map.setMinZoom(map.getBoundsZoom(brazilBounds))
+
+        if (initialViewRef.current.zoom <= 4) {
+          map.fitBounds(brazilBounds, { padding: [20, 20], animate: false })
+        } else {
+          map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
+        }
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution:
             '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
-          minZoom: 1,
-          noWrap: false,
+          minZoom: map.getMinZoom(),
+          noWrap: true,
           tileSize: 256,
           updateWhenZooming: false,
         }).addTo(map)
@@ -86,7 +100,7 @@ export default function OpenStreetMap({
         if (onMapClickRef.current) {
           map.on('click', (event: any) => {
             const { lat, lng } = event.latlng
-            onMapClickRef.current?.(lat, lng)
+            if (brazilBounds.contains(event.latlng)) onMapClickRef.current?.(lat, lng)
           })
         }
 
@@ -108,8 +122,15 @@ export default function OpenStreetMap({
   }, [attempt])
 
   useEffect(() => {
-    if (ready && mapInstanceRef.current)
-      mapInstanceRef.current.setView(center, zoom, { animate: !reducedMotion })
+    const map = mapInstanceRef.current
+    const L = leafletRef.current
+    if (!ready || !map || !L) return
+    if (zoom <= 4) {
+      map.fitBounds(L.latLngBounds(BRAZIL_BOUNDS), { padding: [20, 20], animate: !reducedMotion })
+      map.setMinZoom(map.getZoom())
+    } else {
+      map.setView(center, zoom, { animate: !reducedMotion })
+    }
   }, [ready, center, zoom, reducedMotion])
 
   useEffect(() => {
