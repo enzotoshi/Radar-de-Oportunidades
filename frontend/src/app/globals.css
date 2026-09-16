@@ -496,6 +496,8 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .map-canvas { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
 .territory-label, .map-legend, .map-context { background: rgba(255,255,255,.94); border: 1px solid rgba(159,180,178,.8); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }
 .territory-label { top: var(--space-4); right: var(--space-4); left: auto; padding: .65rem .8rem; border-radius: var(--radius-panel); }
+.territory-label strong { display: block; color: var(--color-structure); font-size: var(--text-body-sm); }
+.country-flag { font-size: 1.35rem; line-height: 1; }
 .territory-label small { font-size: var(--text-caption); }
 .atlas-map .leaflet-top.leaflet-left { top: var(--space-4); left: var(--space-4); }
 .map-legend { left: var(--space-4); bottom: 5.25rem; max-width: calc(100% - 2rem); padding: .55rem .75rem; border-radius: var(--radius-panel); font-size: var(--text-caption); }
