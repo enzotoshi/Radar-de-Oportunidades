@@ -34,6 +34,8 @@ API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
 OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "25"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
+    "https://lz4.overpass-api.de/api/interpreter",
+    "https://z.overpass-api.de/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
