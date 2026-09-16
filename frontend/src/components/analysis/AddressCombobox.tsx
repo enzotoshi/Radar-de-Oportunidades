@@ -14,6 +14,16 @@ interface AddressComboboxProps {
   onError: (message: string | null) => void
 }
 
+function removeDuplicateAddresses(locations: AddressSuggestion[]) {
+  const seen = new Set<string>()
+  return locations.filter(location => {
+    const key = location.display_name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export default function AddressCombobox({ value, selected, onValueChange, onSelect, onError }: AddressComboboxProps) {
   const [results, setResults] = useState<AddressSuggestion[]>([])
   const [loading, setLoading] = useState(false)
@@ -68,7 +78,7 @@ export default function AddressCombobox({ value, selected, onValueChange, onSele
     setActiveOption(-1)
     onError(null)
     try {
-      const next = await searchAddress(cleaned, controller.signal, !selectFirst)
+      const next = removeDuplicateAddresses(await searchAddress(cleaned, controller.signal, !selectFirst))
       if (request !== version.current) return
       if (selectFirst && next[0]) choose(next[0])
       else updateResults(next, cleaned)
