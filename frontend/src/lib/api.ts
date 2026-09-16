@@ -80,6 +80,7 @@ function reverseGeocodeWithJsonp(lat: number, lng: number, signal?: AbortSignal)
   return new Promise((resolve, reject) => {
     const callback = `radarNominatim${Date.now()}${Math.random().toString(36).slice(2)}`
     const script = document.createElement('script')
+    const callbackTarget = window as unknown as Record<string, unknown>
     let timeout: number | undefined
     let onAbort = () => {}
     const url = new URL('https://nominatim.openstreetmap.org/reverse')
@@ -89,7 +90,7 @@ function reverseGeocodeWithJsonp(lat: number, lng: number, signal?: AbortSignal)
     const cleanup = () => {
       if (timeout !== undefined) window.clearTimeout(timeout)
       script.remove()
-      delete (window as Window & Record<string, unknown>)[callback]
+      delete callbackTarget[callback]
       signal?.removeEventListener('abort', onAbort)
     }
     const finish = (error?: Error, result?: AddressSuggestion | null) => {
@@ -99,7 +100,7 @@ function reverseGeocodeWithJsonp(lat: number, lng: number, signal?: AbortSignal)
     }
     onAbort = () => finish(new DOMException('Consulta cancelada.', 'AbortError'))
 
-    ;(window as Window & Record<string, unknown>)[callback] = (result: NominatimReverseResult) => finish(undefined, mapNominatimStreet(lat, lng, result))
+    callbackTarget[callback] = (result: NominatimReverseResult) => finish(undefined, mapNominatimStreet(lat, lng, result))
     script.onerror = () => finish(new Error('Não foi possível consultar a rua selecionada.'))
     timeout = window.setTimeout(() => finish(new Error('A consulta de rua demorou demais para responder.')), 15_000)
     signal?.addEventListener('abort', onAbort, { once: true })
