@@ -19,6 +19,11 @@ const BRAZIL_BOUNDS: [[number, number], [number, number]] = [
   [5.3, -34.8],
 ]
 
+const SOUTH_AMERICA_BOUNDS: [[number, number], [number, number]] = [
+  [-56.0, -82.0],
+  [13.0, -34.0],
+]
+
 // One shared load also handles React Strict Mode mounting twice in development.
 let leafletLoad: Promise<typeof import('leaflet')> | null = null
 function loadLeaflet() {
@@ -65,16 +70,17 @@ export default function OpenStreetMap({
         if (disposed || !mapRef.current) return
         leafletRef.current = L
         const brazilBounds = L.latLngBounds(BRAZIL_BOUNDS)
+        const southAmericaBounds = L.latLngBounds(SOUTH_AMERICA_BOUNDS)
         const map = L.map(mapRef.current, {
-          maxBounds: brazilBounds,
+          maxBounds: southAmericaBounds,
           maxBoundsViscosity: 1,
           worldCopyJump: false,
           zoomSnap: 0.5, // permite zooms intermediários
         })
-        map.setMinZoom(map.getBoundsZoom(brazilBounds))
+        map.setMinZoom(map.getBoundsZoom(southAmericaBounds))
 
         if (initialViewRef.current.zoom <= 4) {
-          map.fitBounds(brazilBounds, { padding: [20, 20], animate: false })
+          map.fitBounds(southAmericaBounds, { padding: [20, 20], animate: false })
         } else {
           map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
         }
@@ -126,7 +132,7 @@ export default function OpenStreetMap({
     const L = leafletRef.current
     if (!ready || !map || !L) return
     if (zoom <= 4) {
-      map.fitBounds(L.latLngBounds(BRAZIL_BOUNDS), { padding: [20, 20], animate: !reducedMotion })
+      map.fitBounds(L.latLngBounds(SOUTH_AMERICA_BOUNDS), { padding: [20, 20], animate: !reducedMotion })
       map.setMinZoom(map.getZoom())
     } else {
       map.setView(center, zoom, { animate: !reducedMotion })
