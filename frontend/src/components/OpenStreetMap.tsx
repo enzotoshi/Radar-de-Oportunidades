@@ -117,7 +117,7 @@ export default function OpenStreetMap({
         )
         L.polygon([worldRing, ...brazilRings], {
           stroke: false,
-          fillColor: '#eef3f1',
+          fillColor: '#a9d5e3',
           fillOpacity: 1,
           fillRule: 'evenodd',
           interactive: false,
@@ -125,9 +125,7 @@ export default function OpenStreetMap({
 
         const brazilLayer = L.geoJSON(brazilBoundary as any, {
           style: {
-            color: '#087f78',
-            weight: 2,
-            opacity: 0.8,
+            stroke: false,
             fillOpacity: 0,
           },
         }).addTo(map)
