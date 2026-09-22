@@ -20,7 +20,7 @@ class LocationAnalysisRequest(BaseModel):
     business_type: str = Field(..., min_length=2)
     lat: float = Field(..., ge=-90, le=90)
     lng: float = Field(..., ge=-180, le=180)
-    budget: Optional[float] = Field(default=None, gt=0)
+    budget: Optional[float] = Field(default=None, gt=0, le=100_000_000_000)
     municipality_ibge_code: Optional[str] = Field(default=None, pattern=r"^\d{7}$")
     municipality_name: Optional[str] = Field(default=None, min_length=2)
     municipality_state: Optional[str] = Field(default=None, pattern=r"^[A-Z]{2}$")

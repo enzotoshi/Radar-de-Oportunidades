@@ -1,5 +1,7 @@
 import type { MetricDetail } from '@/types'
 
+export const MAX_BUDGET = 100_000_000_000
+
 export function formatMetric(metric: MetricDetail): string {
   if (metric.value === null || metric.value === undefined || metric.value === '') return 'Dado indisponível'
   if (metric.unit === 'BRL' && typeof metric.value === 'number') {
@@ -18,7 +20,10 @@ export function formatCollectedAt(value: string): string {
 
 export function formatBudgetInput(value: string): string {
   const digits = value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  if (!digits) return ''
+  const parsed = Number(digits)
+  const limited = Number.isFinite(parsed) ? Math.min(parsed, MAX_BUDGET) : MAX_BUDGET
+  return String(limited).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 export function parseBudgetInput(value: string): number | undefined {

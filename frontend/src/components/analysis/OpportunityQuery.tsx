@@ -41,7 +41,7 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
       <BusinessPicker businesses={businesses} loading={loadingBusinesses} value={props.selectedBusiness} onChange={props.onBusinessChange} />
       <div>
         <label htmlFor="analysis-budget" className="field-label"><CircleDollarSign size={16} aria-hidden="true" />Orçamento informado por você</label>
-        <div className="money-control"><span aria-hidden="true">R$</span><input id="analysis-budget" className="field-control" type="text" inputMode="numeric" autoComplete="off" placeholder="Digite o valor..." value={props.budget} onChange={event => props.onBudgetChange(formatBudgetInput(event.target.value))} /></div>
+        <div className="money-control"><span aria-hidden="true">R$</span><input id="analysis-budget" className="field-control" type="text" inputMode="numeric" autoComplete="off" maxLength={15} placeholder="Digite o valor..." value={props.budget} onChange={event => props.onBudgetChange(formatBudgetInput(event.target.value))} /></div>
       </div>
       {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
     </div>
