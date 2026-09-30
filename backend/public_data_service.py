@@ -31,7 +31,7 @@ if os.name == "nt":
 
 
 API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
-OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "25"))
+OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "60"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
     "https://lz4.overpass-api.de/api/interpreter",
@@ -264,7 +264,7 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
     # Apenas concorrentes precisam chegar ao navegador para aparecer no mapa.
     # Infraestrutura e mobilidade são usadas somente como totais, portanto o
     # Overpass as conta no servidor. Isso reduz muito a resposta em áreas densas.
-    query = f"""[out:json][timeout:20];
+    query = f"""[out:json][timeout:55];
 (
 {competitor_query}
 )->.competitors;
@@ -286,12 +286,20 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
     if _preferred_overpass_url in endpoints:
         endpoints.remove(_preferred_overpass_url)
         endpoints.insert(0, _preferred_overpass_url)
+    deadline = time.monotonic() + OVERPASS_READ_TIMEOUT
     for endpoint in endpoints:
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
         try:
             # O limite HTTP precisa ser maior que o limite de execução pedido
             # ao Overpass; antes, uma consulta válida de até 18 s era cancelada
             # pelo cliente após apenas 12 s.
-            response = _session.post(endpoint, data={"data": query}, timeout=(5, OVERPASS_READ_TIMEOUT))
+            response = _session.post(
+                endpoint,
+                data={"data": query},
+                timeout=(min(5, remaining_seconds), remaining_seconds),
+            )
             response.raise_for_status()
             payload = response.json()
             _preferred_overpass_url = endpoint
@@ -299,7 +307,11 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
         except (requests.RequestException, ValueError) as exc:
             last_error = exc
     if payload is None:
-        raise PublicDataUnavailable(f"Instâncias Overpass indisponíveis: {last_error}")
+        print(f"Overpass indisponível após {OVERPASS_READ_TIMEOUT}s: {last_error}")
+        raise PublicDataUnavailable(
+            "O OpenStreetMap não respondeu dentro de 60 segundos. "
+            "Nenhum score foi calculado para evitar dados incompletos. Tente novamente em instantes."
+        )
     elements = payload.get("elements")
     if not isinstance(elements, list):
         raise PublicDataUnavailable("A resposta do Overpass não contém elementos válidos.")
