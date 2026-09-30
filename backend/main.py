@@ -211,30 +211,30 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         },
         "competitors": {
             "value": osm["competitor_count"],
-            "label": "Estabelecimentos compatíveis no OSM",
+            "label": "Concorrentes compatíveis no OSM",
             "description": f"Registros mapeados no raio de {radius_km:.1f} km.",
             "kind": "real",
             "source": "OpenStreetMap/Overpass",
             "reference": analysis["collected_at"],
-            "unit": "estabelecimentos",
+            "unit": "concorrentes",
         },
         "competition_density": {
             "value": osm["competitor_density"],
-            "label": "Densidade de estabelecimentos",
+            "label": "Densidade de concorrentes",
             "description": "Quantidade mapeada dividida pela área circular consultada.",
             "kind": "calculated",
             "source": "Cálculo do sistema sobre OpenStreetMap",
             "reference": analysis["collected_at"],
-            "unit": "estabelecimentos/km²",
+            "unit": "concorrentes/km²",
         },
         "infrastructure": {
             "value": osm["infrastructure_count"],
-            "label": "Equipamentos de infraestrutura",
+            "label": "Estabelecimentos de infraestrutura",
             "description": "Bancos, hospitais, clínicas, escolas, universidades e mercados públicos mapeados.",
             "kind": "real",
             "source": "OpenStreetMap/Overpass",
             "reference": analysis["collected_at"],
-            "unit": "equipamentos",
+            "unit": "estabelecimentos",
         },
         "mobility": {
             "value": osm["transport_count"],
@@ -248,8 +248,8 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
     }
 
     explanation = (
-        f"A consulta encontrou {osm['competitor_count']} estabelecimentos compatíveis "
-        f"e {osm['infrastructure_count']} equipamentos de infraestrutura em um raio de "
+        f"A consulta encontrou {osm['competitor_count']} concorrentes compatíveis "
+        f"e {osm['infrastructure_count']} estabelecimentos de infraestrutura em um raio de "
         f"{radius_km:.1f} km. O índice combina somente registros do OpenStreetMap: "
         "45% concorrência, 30% infraestrutura e 25% mobilidade. "
         "PIB e população são exibidos como contexto e não alteram o índice."
