@@ -14,7 +14,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 60_000,
+  // O Overpass pode usar até 60 s no backend. A margem evita que o navegador
+  // cancele a chamada no mesmo instante em que o servidor vai devolver o
+  // resultado ou uma explicação específica da fonte.
+  timeout: 75_000,
   headers: { 'Content-Type': 'application/json' },
 })
 
