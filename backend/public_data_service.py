@@ -34,11 +34,11 @@ API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
 OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "60"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
-    "https://lz4.overpass-api.de/api/interpreter",
-    "https://z.overpass-api.de/api/interpreter",
-    "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+    "https://overpass.osm.jp/api/interpreter",
 ]
 NOMINATIM_URL = os.getenv("NOMINATIM_API_URL", "https://nominatim.openstreetmap.org")
 PHOTON_URL = os.getenv("PHOTON_API_URL", "https://photon.komoot.io/api/")
@@ -210,20 +210,12 @@ def _nominatim_get(path: str, params: Dict[str, Any]) -> Any:
 
 
 def _selector(key: str, pattern: str, radius: int, lat: float, lng: float) -> str:
-    lat_delta = radius / 111_320
-    lng_delta = radius / (111_320 * max(0.1, math.cos(math.radians(lat))))
-    south, north = lat - lat_delta, lat + lat_delta
-    west, east = lng - lng_delta, lng + lng_delta
-    return f'nwr({south:.7f},{west:.7f},{north:.7f},{east:.7f})["{key}"~"^({pattern})$"];'
+    return f'nwr(around:{radius},{lat:.7f},{lng:.7f})["{key}"~"^({pattern})$"];'
 
 
 def _business_selector(rule: Dict[str, str], radius: int, lat: float, lng: float) -> str:
-    lat_delta = radius / 111_320
-    lng_delta = radius / (111_320 * max(0.1, math.cos(math.radians(lat))))
-    south, north = lat - lat_delta, lat + lat_delta
-    west, east = lng - lng_delta, lng + lng_delta
     tags = "".join(f'["{key}"~"^({pattern})$"]' for key, pattern in rule.items())
-    return f"nwr({south:.7f},{west:.7f},{north:.7f},{east:.7f}){tags};"
+    return f"nwr(around:{radius},{lat:.7f},{lng:.7f}){tags};"
 
 
 def _business_filters(business_type: str) -> List[Dict[str, str]]:
@@ -264,7 +256,7 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
     # Apenas concorrentes precisam chegar ao navegador para aparecer no mapa.
     # Infraestrutura e mobilidade são usadas somente como totais, portanto o
     # Overpass as conta no servidor. Isso reduz muito a resposta em áreas densas.
-    query = f"""[out:json][timeout:55];
+    query = f"""[out:json][timeout:15];
 (
 {competitor_query}
 )->.competitors;
@@ -287,10 +279,14 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
         endpoints.remove(_preferred_overpass_url)
         endpoints.insert(0, _preferred_overpass_url)
     deadline = time.monotonic() + OVERPASS_READ_TIMEOUT
-    for endpoint in endpoints:
+    for index, endpoint in enumerate(endpoints):
         remaining_seconds = deadline - time.monotonic()
         if remaining_seconds <= 0:
             break
+        # Distribui os 60 s entre provedores independentes para que um espelho
+        # congestionado não elimine todas as tentativas de fallback.
+        endpoints_left = len(endpoints) - index
+        attempt_timeout = max(1.0, remaining_seconds / endpoints_left)
         try:
             # O limite HTTP precisa ser maior que o limite de execução pedido
             # ao Overpass; antes, uma consulta válida de até 18 s era cancelada
@@ -298,7 +294,7 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
             response = _session.post(
                 endpoint,
                 data={"data": query},
-                timeout=(min(5, remaining_seconds), remaining_seconds),
+                timeout=(min(5, attempt_timeout), attempt_timeout),
             )
             response.raise_for_status()
             payload = response.json()
