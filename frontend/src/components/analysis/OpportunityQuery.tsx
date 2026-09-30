@@ -59,7 +59,6 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
           {analysisNarrative.completed.map(item => <p className="analysis-progress__completed" key={item}><span aria-hidden="true">✓</span>{item}</p>)}
           <p className="analysis-progress__current" key={analysisNarrative.current}><span className="analysis-progress__spark" aria-hidden="true">✦</span>{analysisNarrative.current}</p>
         </div>
-        <p className="analysis-progress__note">OpenStreetMap, WorldPop e IBGE são consultados em paralelo. O resultado só aparece quando a leitura estiver completa.</p>
       </div>}
     </footer>
   </section>
