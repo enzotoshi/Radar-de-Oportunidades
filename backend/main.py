@@ -627,5 +627,9 @@ def api_status() -> Dict[str, Any]:
                 "status": "configured" if test_speech_connection() else "unavailable",
                 "fabricated_data": False,
             },
+            "groq_ai": {
+                "status": "configured" if bool(os.getenv("GROQ_API_KEY")) else "unavailable",
+                "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            },
         },
     }
