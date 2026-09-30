@@ -493,6 +493,10 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .query-action .button { width: 100%; }
 .query-action p { margin-top: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-caption); line-height: 1.45; }
 .analysis-progress { display: grid; gap: .6rem; margin: var(--space-4) 0 0; color: var(--color-ink-muted); font-size: var(--text-caption); }
+.investor-ai-report { padding: var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-medium); background: var(--color-surface-muted); }
+.investor-ai-report h2 { margin: var(--space-2) 0 var(--space-3); }
+.investor-ai-report__content { white-space: pre-wrap; line-height: 1.65; }
+.investor-ai-report small { display: block; margin-top: var(--space-4); color: var(--color-ink-muted); }
 .analysis-progress__message { display: flex; align-items: center; gap: .45rem; font-weight: 600; letter-spacing: -.01em; }
 .analysis-progress__spark { display: inline-block; color: #477ae7; font-size: 1rem; animation: analysis-spark 1.65s ease-in-out infinite; }
 .analysis-progress__track { position: relative; height: 2px; overflow: hidden; border-radius: 999px; background: #e4e9f3; }

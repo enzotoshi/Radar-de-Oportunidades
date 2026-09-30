@@ -119,6 +119,11 @@ export interface GameResult {
   source_analysis_at: string
 }
 
+export interface InvestorReport {
+  report: string
+  model: string
+}
+
 export interface AddressSuggestion {
   place_id: string
   display_name: string

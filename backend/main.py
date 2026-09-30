@@ -15,6 +15,7 @@ from models import (
     AnalysisResponse,
     GameScoreRequest,
     GameScoreResponse,
+    InvestorReportResponse,
     LocationAnalysisRequest,
     SimulateRequest,
     SimulateResponse,
@@ -31,6 +32,7 @@ from public_data_service import (
     search_locations,
 )
 from speech_service import test_speech_connection, transcribe_audio
+from ai_report_service import AIReportUnavailable, generate_investor_report
 
 
 app = FastAPI(
@@ -575,6 +577,16 @@ def gamification_score(request: GameScoreRequest) -> GameScoreResponse:
         ),
         source_analysis_at=observed["collected_at"],
     )
+
+
+@app.post("/api/investor-report", response_model=InvestorReportResponse)
+def investor_report(request: LocationAnalysisRequest) -> InvestorReportResponse:
+    """Gera uma leitura por IA, limitada aos dados e avisos do Radar."""
+    analysis = _build_analysis(request)
+    try:
+        return InvestorReportResponse(**generate_investor_report(analysis))
+    except AIReportUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post("/api/hotspots/analyze-location", response_model=AnalysisResponse)

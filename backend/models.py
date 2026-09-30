@@ -36,6 +36,11 @@ class GameScoreRequest(LocationAnalysisRequest):
     pass
 
 
+class InvestorReportResponse(BaseModel):
+    report: str
+    model: str
+
+
 class DataSource(BaseModel):
     name: str
     url: str

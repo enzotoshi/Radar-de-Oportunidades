@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Briefcase, RotateCcw, Target } from 'lucide-react'
-import { calculateGameScore, getApiError } from '@/lib/api'
+import { calculateGameScore, generateInvestorReport, getApiError } from '@/lib/api'
 import { resultReveal } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/useReducedMotion'
-import type { AnalysisResult, GameResult } from '@/types'
+import type { AnalysisResult, GameResult, InvestorReport } from '@/types'
 import AnalysisRequired from './AnalysisRequired'
 import Button from './shared/Button'
 import InlineAlert from './shared/InlineAlert'
@@ -20,10 +20,13 @@ export default function Gamification({ analysisResult, businessType, onGoToMap }
   const [phase, setPhase] = useState<'intro' | 'result'>('intro')
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [loading, setLoading] = useState(false)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [report, setReport] = useState<InvestorReport | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const requestVersion = useRef(0)
 
-  useEffect(() => { requestVersion.current += 1; setLoading(false); setPhase('intro'); setGameResult(null); setError(null) }, [analysisResult])
+  useEffect(() => { requestVersion.current += 1; setLoading(false); setReportLoading(false); setPhase('intro'); setGameResult(null); setReport(null); setError(null); setReportError(null) }, [analysisResult])
 
   const evaluate = async () => {
     if (!analysisResult || !businessType) return
@@ -31,7 +34,15 @@ export default function Gamification({ analysisResult, businessType, onGoToMap }
     setLoading(true); setError(null)
     try {
       const response = await calculateGameScore(analysisResult.location, businessType)
-      if (version === requestVersion.current) { setGameResult(response); setPhase('result') }
+      if (version === requestVersion.current) {
+        setGameResult(response)
+        setPhase('result')
+        setReportLoading(true)
+        void generateInvestorReport(analysisResult.location, businessType)
+          .then(value => { if (version === requestVersion.current) setReport(value) })
+          .catch(reason => { if (version === requestVersion.current) setReportError(getApiError(reason, 'O relatório por IA está indisponível agora.')) })
+          .finally(() => { if (version === requestVersion.current) setReportLoading(false) })
+      }
     } catch (reason) {
       if (version === requestVersion.current) setError(getApiError(reason, 'Não foi possível pontuar porque os dados observados estão indisponíveis.'))
     } finally { if (version === requestVersion.current) setLoading(false) }
@@ -46,6 +57,7 @@ export default function Gamification({ analysisResult, businessType, onGoToMap }
       </section> : gameResult && <motion.div className="investor-result" variants={resultReveal} initial={reducedMotion ? false : 'hidden'} animate="visible">
         <ScoreOverview result={gameResult} reducedMotion={reducedMotion} />
         <EvidenceBreakdown result={gameResult} />
+        <section className="investor-ai-report" aria-live="polite"><span className="section-kicker">Relatório por IA</span><h2>Leitura do investimento</h2>{reportLoading ? <p>Gerando relatório com base nas evidências coletadas...</p> : report ? <><p className="investor-ai-report__content">{report.report}</p><small>Gerado por {report.model}; interprete junto às fontes e limitações exibidas.</small></> : <InlineAlert tone="warning">{reportError || 'Relatório por IA indisponível.'}</InlineAlert>}</section>
         <Button variant="secondary" onClick={() => { setPhase('intro'); setGameResult(null) }}><RotateCcw size={17} aria-hidden="true" />Reavaliar os mesmos dados</Button>
       </motion.div>}
   </div>
