@@ -27,15 +27,32 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
   const [selectedLocation, setSelectedLocation] = useState<AddressSuggestion | null>(null)
   const [budget, setBudget] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
+  const [analysisStep, setAnalysisStep] = useState(0)
   const [resolvingMapLocation, setResolvingMapLocation] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(true)
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null)
   const analysisVersion = useRef(0)
   const reverseGeocodeVersion = useRef(0)
+  const analysisStepTimers = useRef<number[]>([])
+
+  const clearAnalysisProgress = () => {
+    analysisStepTimers.current.forEach(window.clearTimeout)
+    analysisStepTimers.current = []
+  }
+
+  const startAnalysisProgress = () => {
+    clearAnalysisProgress()
+    setAnalysisStep(0)
+    analysisStepTimers.current = [
+      window.setTimeout(() => setAnalysisStep(1), 700),
+      window.setTimeout(() => setAnalysisStep(2), 2200),
+    ]
+  }
 
   const invalidateAnalysis = () => {
     analysisVersion.current += 1
+    clearAnalysisProgress()
     setAnalyzing(false)
     setAnalysisResult(null)
     setClickedLocation(null)
@@ -105,6 +122,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     if (!selectedBusiness) { setError('Selecione um tipo de negócio.'); return }
     const version = ++analysisVersion.current
     setAnalyzing(true)
+    startAnalysisProgress()
     setError(null)
     setAnalysisResult(null)
     try {
@@ -122,7 +140,10 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     } catch (reason) {
       if (version === analysisVersion.current) setError(getApiError(reason, 'Não foi possível consultar as fontes públicas. Nenhum valor fictício foi exibido.'))
     } finally {
-      if (version === analysisVersion.current) setAnalyzing(false)
+      if (version === analysisVersion.current) {
+        clearAnalysisProgress()
+        setAnalyzing(false)
+      }
     }
   }
 
@@ -131,7 +152,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
       {analysisResult && <Button variant="secondary" size="compact" className="insights-toggle" aria-expanded={insightsOpen} aria-controls="analysis-insights" onClick={() => setInsightsOpen(value => !value)}><PanelRightOpen size={17} aria-hidden="true" />{insightsOpen ? 'Ocultar evidências' : 'Ver evidências'}</Button>}
     </div>
     <div className="atlas-workspace" data-has-result={Boolean(analysisResult)}>
-      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} resolvingLocation={resolvingMapLocation} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
+      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} analysisStep={analysisStep} resolvingLocation={resolvingMapLocation} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
       <section className="atlas-map" aria-label="Mapa com dados observados">
         <div className="map-canvas"><MapComponent
           analysisResult={analysisResult}

@@ -492,6 +492,13 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .query-action { margin-top: auto; padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
 .query-action .button { width: 100%; }
 .query-action p { margin-top: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-caption); line-height: 1.45; }
+.analysis-progress { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; padding: var(--space-3); list-style: none; border: 1px solid var(--color-border); border-radius: var(--radius-medium); background: var(--color-surface-muted); }
+.analysis-progress li { display: flex; align-items: center; gap: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-caption); }
+.analysis-progress li > span { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border: 1px solid currentColor; border-radius: 50%; font-size: .7rem; font-weight: 700; }
+.analysis-progress li[data-state='active'] { color: var(--color-action); font-weight: 650; }
+.analysis-progress li[data-state='active'] > span { animation: analysis-step-pulse 1.2s ease-in-out infinite; }
+.analysis-progress li[data-state='done'] { color: var(--color-success, #24705c); }
+@keyframes analysis-step-pulse { 50% { transform: scale(1.12); opacity: .55; } }
 .atlas-map { min-width: 0; height: 100%; position: relative; isolation: isolate; overflow: hidden; background: #dfeae7; grid-column: 2; grid-row: 1; }
 .map-canvas { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
 .territory-label, .map-legend, .map-context { background: rgba(255,255,255,.94); border: 1px solid rgba(159,180,178,.8); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }

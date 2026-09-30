@@ -16,6 +16,7 @@ interface OpportunityQueryProps {
   selectedBusiness: string
   budget: string
   analyzing: boolean
+  analysisStep: number
   resolvingLocation: boolean
   error: string | null
   onAddressChange: (value: string) => void
@@ -45,6 +46,11 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
       </div>
       {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
     </div>
-    <footer className="query-action"><Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button></footer>
+    <footer className="query-action">
+      <Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button>
+      {props.analyzing && <ol className="analysis-progress" aria-live="polite" aria-label="Etapas da análise">
+        {['Validando localização e categoria', 'Consultando dados públicos do território', 'Calculando o índice e organizando evidências'].map((step, index) => <li key={step} data-state={index < props.analysisStep ? 'done' : index === props.analysisStep ? 'active' : 'pending'}><span aria-hidden="true">{index < props.analysisStep ? '✓' : index + 1}</span>{step}</li>)}
+      </ol>}
+    </footer>
   </section>
 }
