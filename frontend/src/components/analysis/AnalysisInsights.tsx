@@ -6,7 +6,7 @@ import InlineAlert from '../shared/InlineAlert'
 import MetricSignal from './MetricSignal'
 import ProvenanceDialog from './ProvenanceDialog'
 
-const componentKeys = new Set(['competitors', 'competition_density', 'infrastructure', 'mobility'])
+const componentKeys = new Set(['competitors', 'competition_density', 'infrastructure', 'mobility', 'financial_viability'])
 
 export default function AnalysisInsights({ result, onClear, onGoToInvestor }: { result: AnalysisResult; onClear: () => void; onGoToInvestor: () => void }) {
   const entries = Object.entries(result.metrics)

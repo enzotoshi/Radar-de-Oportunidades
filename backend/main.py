@@ -113,6 +113,14 @@ BUSINESS_CATALOG = [
 SUPPORTED_BUSINESSES = {item["id"] for item in BUSINESS_CATALOG}
 BUSINESS_ICONS = {item["id"]: item["icon"] for item in BUSINESS_CATALOG}
 BUSINESS_ALIASES = {"restaurante_fitness": "restaurante_saudavel"}
+INVESTMENT_REFERENCE_BY_SECTOR = {
+    "Alimentação e bebidas": 100_000,
+    "Saúde e bem-estar": 150_000,
+    "Varejo": 100_000,
+    "Serviços": 70_000,
+    "Educação": 100_000,
+    "Negócios e outros": 150_000,
+}
 
 
 def _ensure_supported_business(business_type: str) -> str:
@@ -139,6 +147,35 @@ def _recommendation(score: float) -> str:
     if score >= 45:
         return "Os sinais mapeados são mistos; complemente a análise antes de investir."
     return "Os sinais mapeados exigem cautela; o índice não substitui estudo de viabilidade."
+
+
+def _financial_viability(budget: Optional[float], business_type: str) -> Optional[Dict[str, float]]:
+    """Converte o orçamento em capacidade de executar a oportunidade.
+
+    A referência é um parâmetro explícito por setor, não uma cotação de mercado.
+    Ela cobre implantação e uma reserva operacional de 50% antes de liberar todo
+    o potencial territorial.
+    """
+    if budget is None:
+        return None
+
+    business = next(item for item in BUSINESS_CATALOG if item["id"] == business_type)
+    reference = INVESTMENT_REFERENCE_BY_SECTOR[business["sector"]]
+    ratio = budget / reference
+    if ratio < 0.5:
+        factor = 0.05 + ratio * 0.10
+    elif ratio < 1:
+        factor = 0.10 + (ratio - 0.5) * 1.20
+    elif ratio < 1.5:
+        factor = 0.70 + (ratio - 1) * 0.60
+    else:
+        factor = 1.0
+    return {
+        "budget": budget,
+        "reference": reference,
+        "ratio": ratio,
+        "factor": factor,
+    }
 
 
 def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
@@ -169,7 +206,9 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         if "mil" in str(gdp.get("unit") or "").lower():
             gdp_value *= 1000
     score_parts = analysis["score"]
-    score = score_parts["overall"]
+    market_score = score_parts["overall"]
+    financial = _financial_viability(request.budget, business_type)
+    score = round(market_score * financial["factor"], 1) if financial else market_score
     radius_km = analysis["radius_meters"] / 1000
     warnings = [
         "A cobertura do OpenStreetMap varia por local. Ausência no mapa não prova ausência no mundo real.",
@@ -179,6 +218,11 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         warnings.append("Estimativa populacional indisponível nesta consulta.")
     if not gdp:
         warnings.append("PIB municipal indisponível nesta consulta.")
+    if financial:
+        warnings.append(
+            "A viabilidade financeira usa uma referência configurada por setor; "
+            "valide custos, aluguel, estoque e capital de giro antes de investir."
+        )
 
     municipality = (
         {
@@ -246,6 +290,19 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
             "unit": "pontos",
         },
     }
+    if financial:
+        metrics["financial_viability"] = {
+            "value": round(financial["factor"] * 100, 1),
+            "label": "Viabilidade do orçamento",
+            "description": (
+                f"Orçamento de R$ {financial['budget']:,.0f} equivale a "
+                f"{financial['ratio']:.2f}× da referência setorial de R$ {financial['reference']:,.0f}."
+            ),
+            "kind": "calculated",
+            "source": "Parâmetro de referência configurado pelo Radar",
+            "reference": "Implantação + 50% de reserva operacional",
+            "unit": "%",
+        }
 
     explanation = (
         f"A consulta encontrou {osm['competitor_count']} concorrentes compatíveis "
@@ -254,6 +311,11 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         "45% concorrência, 30% infraestrutura e 25% mobilidade. "
         "PIB e população são exibidos como contexto e não alteram o índice."
     )
+    if financial:
+        explanation += (
+            f" O índice territorial de {market_score:.1f}/100 foi limitado pela viabilidade "
+            f"financeira para {score:.1f}/100."
+        )
     markers = [
         {
             "id": item["id"],
@@ -285,10 +347,18 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         "sources": analysis["sources"],
         "collected_at": analysis["collected_at"],
         "methodology": {
-            "formula": "0,45 × concorrência + 0,30 × infraestrutura + 0,25 × mobilidade",
+            "formula": (
+                "índice territorial × fator de viabilidade financeira"
+                if financial else "0,45 × concorrência + 0,30 × infraestrutura + 0,25 × mobilidade"
+            ),
             "competition": "máx(0, 100 − densidade_de_estabelecimentos × 9)",
             "infrastructure": "mín(100, equipamentos_mapeados × 5)",
             "mobility": "mín(100, pontos_de_mobilidade_mapeados × 7)",
+            "financial_viability": (
+                "0–50% da referência: operação inviável; 100–150%: reserva operacional; "
+                "acima de 150%: potencial territorial integral"
+                if financial else "Não calculada: orçamento não informado"
+            ),
             "components": score_parts,
         },
         "warnings": warnings,
