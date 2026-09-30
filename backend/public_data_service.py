@@ -34,11 +34,9 @@ API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
 OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "60"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
+    "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.openstreetmap.ru/api/interpreter",
-    "https://overpass.osm.jp/api/interpreter",
 ]
 NOMINATIM_URL = os.getenv("NOMINATIM_API_URL", "https://nominatim.openstreetmap.org")
 PHOTON_URL = os.getenv("PHOTON_API_URL", "https://photon.komoot.io/api/")
@@ -283,10 +281,14 @@ def _query_osm(lat: float, lng: float, business_type: str, radius: int) -> Dict[
         remaining_seconds = deadline - time.monotonic()
         if remaining_seconds <= 0:
             break
-        # Distribui os 60 s entre provedores independentes para que um espelho
-        # congestionado não elimine todas as tentativas de fallback.
+        # O principal recebe até 30 s; os 30 s restantes ficam reservados para
+        # os dois espelhos. Assim uma consulta real um pouco mais lenta não é
+        # interrompida cedo, sem impedir uma tentativa de fallback.
         endpoints_left = len(endpoints) - index
-        attempt_timeout = max(1.0, remaining_seconds / endpoints_left)
+        attempt_timeout = max(
+            1.0,
+            min(30.0, remaining_seconds - (endpoints_left - 1) * 15.0),
+        )
         try:
             # O limite HTTP precisa ser maior que o limite de execução pedido
             # ao Overpass; antes, uma consulta válida de até 18 s era cancelada
