@@ -13,7 +13,7 @@ import re
 import threading
 import time
 import unicodedata
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor
 from difflib import SequenceMatcher
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -32,7 +32,6 @@ if os.name == "nt":
 
 API_TIMEOUT = int(os.getenv("API_TIMEOUT", "20"))
 OVERPASS_READ_TIMEOUT = int(os.getenv("OVERPASS_READ_TIMEOUT", "25"))
-OPTIONAL_SOURCE_WAIT_SECONDS = float(os.getenv("OPTIONAL_SOURCE_WAIT_SECONDS", "6"))
 _configured_overpass = os.getenv("OVERPASS_API_URL")
 OVERPASS_URLS = [_configured_overpass] if _configured_overpass else [
     "https://lz4.overpass-api.de/api/interpreter",
@@ -851,8 +850,7 @@ def analyze_public_data(
         return cached
 
     # As três fontes são independentes e podem ser consultadas ao mesmo tempo.
-    executor = ThreadPoolExecutor(max_workers=3)
-    try:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         osm_future = executor.submit(_query_osm, lat, lng, business_type, radius)
         ibge_future = executor.submit(
             _query_ibge,
@@ -869,29 +867,19 @@ def analyze_public_data(
         except (requests.RequestException, ValueError, PublicDataUnavailable) as exc:
             raise PublicDataUnavailable(f"OpenStreetMap/Overpass indisponível: {exc}") from exc
 
-        optional_deadline = time.monotonic() + max(0.0, OPTIONAL_SOURCE_WAIT_SECONDS)
         ibge_error = None
         try:
-            ibge = ibge_future.result(timeout=max(0.0, optional_deadline - time.monotonic()))
-        except FuturesTimeoutError:
-            ibge = {"location": {}, "city": None, "gdp": None}
-            ibge_error = "Consulta ao IBGE excedeu o tempo de espera."
+            ibge = ibge_future.result()
         except (requests.RequestException, ValueError) as exc:
             ibge = {"location": {}, "city": None, "gdp": None}
             ibge_error = str(exc)
 
         population_error = None
         try:
-            population = population_future.result(timeout=max(0.0, optional_deadline - time.monotonic()))
-        except FuturesTimeoutError:
-            population = None
-            population_error = "Consulta ao WorldPop excedeu o tempo de espera."
+            population = population_future.result()
         except (requests.RequestException, ValueError) as exc:
             population = None
             population_error = str(exc)
-
-    finally:
-        executor.shutdown(wait=False, cancel_futures=True)
 
     result = {
         "osm": osm,
