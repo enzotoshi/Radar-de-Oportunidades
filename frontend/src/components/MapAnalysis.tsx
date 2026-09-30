@@ -45,8 +45,9 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     clearAnalysisProgress()
     setAnalysisStep(0)
     analysisStepTimers.current = [
-      window.setTimeout(() => setAnalysisStep(1), 700),
-      window.setTimeout(() => setAnalysisStep(2), 2200),
+      window.setTimeout(() => setAnalysisStep(1), 500),
+      window.setTimeout(() => setAnalysisStep(2), 1800),
+      window.setTimeout(() => setAnalysisStep(3), 4000),
     ]
   }
 

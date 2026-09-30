@@ -504,9 +504,23 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .analysis-progress__track::before { left: -38%; width: 38%; background: #477ae7; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) infinite; }
 .analysis-progress__track::after { left: -38%; width: 28%; background: #a76de8; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) .42s infinite; }
 .analysis-progress__track i { left: -38%; width: 18%; background: #41a78a; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) .82s infinite; }
+.analysis-progress__steps { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin-top: .15rem; }
+.analysis-progress__steps > div { display: flex; align-items: flex-start; gap: .45rem; min-width: 0; padding: .5rem; border-radius: .45rem; color: #8792a5; transition: color .25s ease, background .25s ease; }
+.analysis-progress__steps > div > span { display: grid; flex: 0 0 auto; place-items: center; width: 1rem; height: 1rem; margin-top: .08rem; border-radius: 50%; background: #e4e9f3; color: #6d7890; font-size: .68rem; font-weight: 700; }
+.analysis-progress__steps p { margin: 0; min-width: 0; }
+.analysis-progress__steps strong, .analysis-progress__steps small { display: block; }
+.analysis-progress__steps strong { color: inherit; font-size: .73rem; }
+.analysis-progress__steps small { margin-top: .1rem; font-size: .67rem; line-height: 1.25; }
+.analysis-progress__steps > div[data-state='active'] { color: #2c5cc5; background: #f0f5ff; }
+.analysis-progress__steps > div[data-state='active'] > span { background: #477ae7; color: white; animation: analysis-step-glow 1.4s ease-in-out infinite; }
+.analysis-progress__steps > div[data-state='done'] { color: #347566; }
+.analysis-progress__steps > div[data-state='done'] > span { background: #dff1ea; color: #347566; }
+.analysis-progress__note { margin: 0; font-size: .69rem; line-height: 1.35; }
 @keyframes analysis-spark { 50% { transform: scale(1.3) rotate(18deg); color: #8d63df; } }
 @keyframes analysis-flow { to { transform: translateX(500%); } }
-@media (prefers-reduced-motion: reduce) { .analysis-progress__spark, .analysis-progress__track::before, .analysis-progress__track::after, .analysis-progress__track i { animation: none; } .analysis-progress__track::before { left: 0; width: 65%; } }
+@keyframes analysis-step-glow { 50% { box-shadow: 0 0 0 .22rem rgba(71,122,231,.13); } }
+@media (max-width: 500px) { .analysis-progress__steps { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .analysis-progress__spark, .analysis-progress__track::before, .analysis-progress__track::after, .analysis-progress__track i, .analysis-progress__steps > div[data-state='active'] > span { animation: none; } .analysis-progress__track::before { left: 0; width: 65%; } }
 .atlas-map { min-width: 0; height: 100%; position: relative; isolation: isolate; overflow: hidden; background: #dfeae7; grid-column: 2; grid-row: 1; }
 .map-canvas { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
 .territory-label, .map-legend, .map-context { background: rgba(255,255,255,.94); border: 1px solid rgba(159,180,178,.8); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }
