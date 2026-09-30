@@ -492,35 +492,21 @@ input[type='range']::-moz-range-thumb { width: 1.25rem; height: 1.25rem; border:
 .query-action { margin-top: auto; padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
 .query-action .button { width: 100%; }
 .query-action p { margin-top: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-caption); line-height: 1.45; }
-.analysis-progress { display: grid; gap: .6rem; margin: var(--space-4) 0 0; color: var(--color-ink-muted); font-size: var(--text-caption); }
+.analysis-progress { display: grid; gap: .75rem; margin: var(--space-5) 0 0; padding: .15rem 0 .1rem; color: var(--color-ink-muted); font-size: var(--text-caption); }
 .investor-ai-report { padding: var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-medium); background: var(--color-surface-muted); }
 .investor-ai-report h2 { margin: var(--space-2) 0 var(--space-3); }
 .investor-ai-report__content { white-space: pre-wrap; line-height: 1.65; }
 .investor-ai-report small { display: block; margin-top: var(--space-4); color: var(--color-ink-muted); }
-.analysis-progress__message { display: flex; align-items: center; gap: .45rem; font-weight: 600; letter-spacing: -.01em; }
-.analysis-progress__spark { display: inline-block; color: #477ae7; font-size: 1rem; animation: analysis-spark 1.65s ease-in-out infinite; }
-.analysis-progress__track { position: relative; height: 2px; overflow: hidden; border-radius: 999px; background: #e4e9f3; }
-.analysis-progress__track::before, .analysis-progress__track::after, .analysis-progress__track i { position: absolute; top: 0; height: 100%; content: ''; border-radius: inherit; }
-.analysis-progress__track::before { left: -38%; width: 38%; background: #477ae7; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) infinite; }
-.analysis-progress__track::after { left: -38%; width: 28%; background: #a76de8; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) .42s infinite; }
-.analysis-progress__track i { left: -38%; width: 18%; background: #41a78a; animation: analysis-flow 1.8s cubic-bezier(.42,0,.2,1) .82s infinite; }
-.analysis-progress__steps { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin-top: .15rem; }
-.analysis-progress__steps > div { display: flex; align-items: flex-start; gap: .45rem; min-width: 0; padding: .5rem; border-radius: .45rem; color: #8792a5; transition: color .25s ease, background .25s ease; }
-.analysis-progress__steps > div > span { display: grid; flex: 0 0 auto; place-items: center; width: 1rem; height: 1rem; margin-top: .08rem; border-radius: 50%; background: #e4e9f3; color: #6d7890; font-size: .68rem; font-weight: 700; }
-.analysis-progress__steps p { margin: 0; min-width: 0; }
-.analysis-progress__steps strong, .analysis-progress__steps small { display: block; }
-.analysis-progress__steps strong { color: inherit; font-size: .73rem; }
-.analysis-progress__steps small { margin-top: .1rem; font-size: .67rem; line-height: 1.25; }
-.analysis-progress__steps > div[data-state='active'] { color: #2c5cc5; background: #f0f5ff; }
-.analysis-progress__steps > div[data-state='active'] > span { background: #477ae7; color: white; animation: analysis-step-glow 1.4s ease-in-out infinite; }
-.analysis-progress__steps > div[data-state='done'] { color: #347566; }
-.analysis-progress__steps > div[data-state='done'] > span { background: #dff1ea; color: #347566; }
-.analysis-progress__note { margin: 0; font-size: .69rem; line-height: 1.35; }
-@keyframes analysis-spark { 50% { transform: scale(1.3) rotate(18deg); color: #8d63df; } }
-@keyframes analysis-flow { to { transform: translateX(500%); } }
-@keyframes analysis-step-glow { 50% { box-shadow: 0 0 0 .22rem rgba(71,122,231,.13); } }
-@media (max-width: 500px) { .analysis-progress__steps { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .analysis-progress__spark, .analysis-progress__track::before, .analysis-progress__track::after, .analysis-progress__track i, .analysis-progress__steps > div[data-state='active'] > span { animation: none; } .analysis-progress__track::before { left: 0; width: 65%; } }
+.analysis-progress__thoughts { display: grid; gap: .35rem; min-height: 5.25rem; padding: .15rem 0; }
+.analysis-progress__completed, .analysis-progress__current { margin: 0; display: flex; align-items: center; min-width: 0; line-height: 1.35; }
+.analysis-progress__completed { gap: .45rem; color: #66847d; font-size: .7rem; animation: analysis-thought-in var(--motion-base) var(--ease-standard) both; }
+.analysis-progress__completed span { display: grid; flex: 0 0 auto; place-items: center; width: 1.05rem; height: 1.05rem; color: #287363; border: 1px solid #b9ddd0; border-radius: 50%; background: #e8f7ef; font-size: .65rem; font-weight: 750; }
+.analysis-progress__current { gap: .6rem; color: var(--color-ink); font-size: .9rem; font-weight: 620; letter-spacing: -.012em; animation: analysis-thought-in var(--motion-base) var(--ease-standard) both; }
+.analysis-progress__spark { display: grid; flex: 0 0 auto; place-items: center; width: 1.8rem; height: 1.8rem; color: #168c7b; border-radius: 50%; background: radial-gradient(circle, rgba(143,227,178,.48) 0%, rgba(143,227,178,.12) 46%, transparent 72%); font-size: 1.2rem; animation: analysis-spark 1.8s ease-in-out infinite; }
+.analysis-progress__note { margin: 0; max-width: 32rem; color: var(--color-ink-muted); font-size: .69rem; line-height: 1.45; }
+@keyframes analysis-spark { 50% { color: #35b9ac; transform: scale(1.12) rotate(12deg); } }
+@keyframes analysis-thought-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .analysis-progress__completed, .analysis-progress__current, .analysis-progress__spark { animation: none; } }
 .atlas-map { min-width: 0; height: 100%; position: relative; isolation: isolate; overflow: hidden; background: #dfeae7; grid-column: 2; grid-row: 1; }
 .map-canvas { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
 .territory-label, .map-legend, .map-context { background: rgba(255,255,255,.94); border: 1px solid rgba(159,180,178,.8); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }

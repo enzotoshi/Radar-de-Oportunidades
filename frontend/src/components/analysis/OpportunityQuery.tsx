@@ -30,6 +30,12 @@ interface OpportunityQueryProps {
 export default function OpportunityQuery(props: OpportunityQueryProps) {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [loadingBusinesses, setLoadingBusinesses] = useState(true)
+  const analysisNarrative = [
+    { current: 'Definindo a área de análise', completed: [] },
+    { current: 'Lendo concorrentes e estabelecimentos próximos', completed: ['Área de análise definida'] },
+    { current: 'Cruzando população e contexto municipal', completed: ['Área de análise definida', 'Fontes territoriais acionadas'] },
+    { current: 'Compondo índice e evidências do território', completed: ['Área de análise definida', 'Fontes territoriais acionadas', 'Sinais recebidos, validando leitura'] },
+  ][props.analysisStep]
 
   useEffect(() => {
     getBusinesses().then(setBusinesses).catch(reason => props.onError(getApiError(reason, 'Não foi possível carregar os tipos de negócio.'))).finally(() => setLoadingBusinesses(false))
@@ -49,17 +55,11 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
     <footer className="query-action">
       <Button type="button" busy={props.analyzing || props.resolvingLocation} onClick={props.onAnalyze}>{props.resolvingLocation ? 'Buscando...' : props.analyzing ? 'Analisando fontes...' : 'Analisar dados reais'}</Button>
       {props.analyzing && <div className="analysis-progress" role="status" aria-live="polite">
-        <div className="analysis-progress__message"><span className="analysis-progress__spark" aria-hidden="true">✦</span><span>{['Preparando a área de análise', 'Lendo o mapa ao redor do local', 'Cruzando contexto populacional e municipal', 'Calculando os sinais e o índice'][props.analysisStep]}</span></div>
-        <div className="analysis-progress__track" aria-hidden="true"><i /></div>
-        <div className="analysis-progress__steps" aria-hidden="true">
-          {[
-            ['Área consultada', 'Raio de 1,5 km no ponto selecionado'],
-            ['OpenStreetMap', 'Concorrentes, infraestrutura e mobilidade'],
-            ['WorldPop + IBGE', 'População da área e contexto municipal'],
-            ['Leitura do Radar', 'Índice, evidências e limitações'],
-          ].map(([label, detail], index) => <div key={label} data-state={index < props.analysisStep ? 'done' : index === props.analysisStep ? 'active' : 'pending'}><span>{index < props.analysisStep ? '✓' : '·'}</span><p><strong>{label}</strong><small>{detail}</small></p></div>)}
+        <div className="analysis-progress__thoughts">
+          {analysisNarrative.completed.map(item => <p className="analysis-progress__completed" key={item}><span aria-hidden="true">✓</span>{item}</p>)}
+          <p className="analysis-progress__current" key={analysisNarrative.current}><span className="analysis-progress__spark" aria-hidden="true">✦</span>{analysisNarrative.current}</p>
         </div>
-        <p className="analysis-progress__note">As fontes são consultadas em paralelo para manter a análise completa.</p>
+        <p className="analysis-progress__note">OpenStreetMap, WorldPop e IBGE são consultados em paralelo. O resultado só aparece quando a leitura estiver completa.</p>
       </div>}
     </footer>
   </section>
