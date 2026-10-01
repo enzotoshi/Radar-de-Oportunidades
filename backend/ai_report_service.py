@@ -23,6 +23,7 @@ def generate_investor_report(analysis: Dict[str, Any]) -> Dict[str, str]:
         "location": analysis["location"],
         "opportunity_score": analysis["opportunity_score"],
         "budget": analysis.get("budget"),
+        "estimated_required_capital": analysis.get("estimated_required_capital"),
         "score_label": analysis["score_label"],
         "metrics": analysis["metrics"],
         "methodology": analysis["methodology"],

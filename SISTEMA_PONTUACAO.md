@@ -28,6 +28,19 @@ mobilidade = min(100, pontos_de_mobilidade * 7)
 
 Os multiplicadores e pesos são escolhas metodológicas do projeto, publicadas para permitir auditoria. Devem ser calibrados futuramente contra resultados observados antes de qualquer uso decisório.
 
+## Orçamento e capital necessário
+
+O usuário pode informar o orçamento disponível e sua estimativa do capital total necessário para o endereço escolhido, incluindo implantação, estoque e reserva de operação. O Radar não conhece esses custos automaticamente.
+
+Quando os dois valores são informados:
+
+```
+cobertura = orçamento / capital necessário estimado pelo usuário
+índice ajustado = índice territorial × min(1, cobertura)
+```
+
+Assim, o endereço e os concorrentes alteram o índice territorial; orçamento e custos estimados alteram a cobertura. Quando o orçamento cobre toda a estimativa, capital adicional não eleva o índice. Sem os dois valores, o resultado mostra somente o índice territorial. A cobertura não é uma taxa de retorno nem prova de viabilidade financeira.
+
 ## Classificação
 
 - 70 a 100: índice alto na metodologia própria;

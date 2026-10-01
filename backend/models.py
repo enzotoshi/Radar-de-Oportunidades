@@ -1,7 +1,7 @@
 """Contratos da API com proveniência e ausência explícita de dados."""
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class VoiceRequest(BaseModel):
@@ -21,9 +21,16 @@ class LocationAnalysisRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lng: float = Field(..., ge=-180, le=180)
     budget: Optional[float] = Field(default=None, gt=0, le=100_000_000_000)
+    estimated_required_capital: Optional[float] = Field(default=None, gt=0, le=100_000_000_000)
     municipality_ibge_code: Optional[str] = Field(default=None, pattern=r"^\d{7}$")
     municipality_name: Optional[str] = Field(default=None, min_length=2)
     municipality_state: Optional[str] = Field(default=None, pattern=r"^[A-Z]{2}$")
+
+    @model_validator(mode="after")
+    def require_budget_and_cost_together(self):
+        if (self.budget is None) != (self.estimated_required_capital is None):
+            raise ValueError("Informe orçamento e capital necessário estimado juntos para ajustar o índice.")
+        return self
 
 
 class SimulateRequest(LocationAnalysisRequest):
@@ -85,6 +92,7 @@ class BusinessMarker(BaseModel):
 class AnalysisResponse(BaseModel):
     opportunity_score: float = Field(..., ge=0, le=100)
     budget: Optional[float] = None
+    estimated_required_capital: Optional[float] = None
     score_label: str
     metrics: Dict[str, MetricDetail]
     explanation: str

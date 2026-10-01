@@ -15,6 +15,7 @@ interface OpportunityQueryProps {
   selectedLocation: AddressSuggestion | null
   selectedBusiness: string
   budget: string
+  requiredCapital: string
   analyzing: boolean
   analysisStep: number
   resolvingLocation: boolean
@@ -23,6 +24,7 @@ interface OpportunityQueryProps {
   onLocationSelect: (value: AddressSuggestion) => void
   onBusinessChange: (value: string) => void
   onBudgetChange: (value: string) => void
+  onRequiredCapitalChange: (value: string) => void
   onAnalyze: () => void
   onError: (message: string | null) => void
 }
@@ -49,6 +51,11 @@ export default function OpportunityQuery(props: OpportunityQueryProps) {
       <div>
         <label htmlFor="analysis-budget" className="field-label"><CircleDollarSign size={16} aria-hidden="true" />Orçamento informado por você</label>
         <div className="money-control"><span aria-hidden="true">R$</span><input id="analysis-budget" className="field-control" type="text" inputMode="numeric" autoComplete="off" maxLength={15} placeholder="Digite o valor..." value={props.budget} onChange={event => props.onBudgetChange(formatBudgetInput(event.target.value))} /></div>
+      </div>
+      <div>
+        <label htmlFor="analysis-required-capital" className="field-label"><CircleDollarSign size={16} aria-hidden="true" />Capital total necessário estimado para este ponto</label>
+        <div className="money-control"><span aria-hidden="true">R$</span><input id="analysis-required-capital" className="field-control" type="text" inputMode="numeric" autoComplete="off" maxLength={15} placeholder="Abertura + estoque + reserva..." value={props.requiredCapital} onChange={event => props.onRequiredCapitalChange(formatBudgetInput(event.target.value))} /></div>
+        <small>Use custos pesquisados para o endereço escolhido. O Radar não possui preços locais de aluguel ou abertura.</small>
       </div>
       {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
     </div>

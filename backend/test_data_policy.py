@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 import unittest
 from unittest.mock import Mock, patch
 
 import main
 import public_data_service as data
 import speech_service
-from models import GameScoreRequest, SimulateRequest
+from models import GameScoreRequest, LocationAnalysisRequest, SimulateRequest
 
 
 def observed_payload():
@@ -54,6 +55,31 @@ class DataPolicyTests(unittest.TestCase):
         result = data._score(observed_payload()["osm"])
         expected = 86.5 * 0.45 + 20 * 0.30 + 21 * 0.25
         self.assertEqual(result["overall"], round(expected, 1))
+
+    def test_budget_uses_user_cost_and_local_observations(self):
+        first_location = observed_payload()
+        second_location = deepcopy(first_location)
+        second_location["score"]["overall"] = 30.0
+        second_location["osm"]["competitor_count"] = 10
+        second_location["osm"]["competitor_density"] = 3.0
+
+        def analyze(payload, budget):
+            with patch.object(main, "analyze_public_data", return_value=payload):
+                return main._build_analysis(LocationAnalysisRequest(
+                    address="Ponto pesquisado", business_type="cafeteria", lat=-23.55,
+                    lng=-46.63, budget=budget, estimated_required_capital=100_000,
+                ))
+
+        covered = analyze(first_location, 100_000)
+        limited = analyze(first_location, 50_000)
+        other_location = analyze(second_location, 50_000)
+        self.assertEqual(covered["opportunity_score"], 42.5)
+        self.assertEqual(covered["metrics"]["budget_coverage"]["value"], 100.0)
+        self.assertEqual(limited["opportunity_score"], 21.2)
+        self.assertEqual(other_location["opportunity_score"], 15.0)
+        self.assertEqual(other_location["metrics"]["competitors"]["value"], 10)
+        with self.assertRaises(ValueError):
+            LocationAnalysisRequest(address="Ponto pesquisado", business_type="cafeteria", lat=-23.55, lng=-46.63, budget=100_000)
 
     def test_all_40_catalog_items_have_real_osm_filters_and_icons(self):
         self.assertEqual(len(main.BUSINESS_CATALOG), 40)
@@ -194,6 +220,15 @@ class DataPolicyTests(unittest.TestCase):
         self.assertEqual(result.assumptions["classification"], "hipóteses do usuário")
         self.assertEqual(len(result.projections), 5)
         self.assertTrue(all(math.isfinite(item.score) for item in result.projections))
+
+    def test_simulation_applies_capital_coverage_to_each_year(self):
+        with patch.object(main, "analyze_public_data", return_value=observed_payload()):
+            result = main.simulate(SimulateRequest(
+                address="Ponto pesquisado", business_type="cafeteria", lat=-23.55, lng=-46.63,
+                budget=50_000, estimated_required_capital=100_000,
+            ))
+        self.assertEqual(result.original_score, 21.2)
+        self.assertEqual([year.score for year in result.projections], [21.2] * 5)
 
     def test_game_score_uses_only_observed_components(self):
         with patch.object(main, "analyze_public_data", return_value=observed_payload()):

@@ -26,6 +26,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
   const [address, setAddress] = useState(selectedRegion)
   const [selectedLocation, setSelectedLocation] = useState<AddressSuggestion | null>(null)
   const [budget, setBudget] = useState('')
+  const [requiredCapital, setRequiredCapital] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisStep, setAnalysisStep] = useState(0)
   const [resolvingMapLocation, setResolvingMapLocation] = useState(false)
@@ -58,17 +59,19 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     setAnalysisResult(null)
     setClickedLocation(null)
   }
-  const changeAddress = (value: string) => { reverseGeocodeVersion.current += 1; setResolvingMapLocation(false); setAddress(value); setSelectedLocation(null); invalidateAnalysis() }
+  const changeAddress = (value: string) => { reverseGeocodeVersion.current += 1; setResolvingMapLocation(false); setAddress(value); setSelectedLocation(null); setRequiredCapital(''); invalidateAnalysis() }
   const chooseLocation = (location: AddressSuggestion) => {
     reverseGeocodeVersion.current += 1
     setResolvingMapLocation(false)
     setSelectedLocation(location)
     setAddress(location.display_name)
     setSelectedRegion(location.display_name)
+    setRequiredCapital('')
     invalidateAnalysis()
   }
-  const changeBusiness = (value: string) => { setSelectedBusiness(value); invalidateAnalysis() }
+  const changeBusiness = (value: string) => { setSelectedBusiness(value); setRequiredCapital(''); invalidateAnalysis() }
   const changeBudget = (value: string) => { setBudget(value); invalidateAnalysis() }
+  const changeRequiredCapital = (value: string) => { setRequiredCapital(value); invalidateAnalysis() }
 
   const handleMapClick = async (lat: number, lng: number) => {
     const version = ++reverseGeocodeVersion.current
@@ -86,6 +89,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     setSelectedLocation({ ...coordinateLocation, display_name: pendingLabel })
     setAddress(pendingLabel)
     setSelectedRegion(pendingLabel)
+    setRequiredCapital('')
     analysisVersion.current += 1
     setAnalyzing(false)
     setAnalysisResult(null)
@@ -121,6 +125,14 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
     if (resolvingMapLocation) return
     if (!selectedLocation) { setError('Busque e selecione uma localização verificada antes de analisar.'); return }
     if (!selectedBusiness) { setError('Selecione um tipo de negócio.'); return }
+    const budgetValue = parseBudgetInput(budget)
+    const capitalValue = parseBudgetInput(requiredCapital)
+    if ((budget && !budgetValue) || (requiredCapital && !capitalValue)) {
+      setError('Informe valores positivos para orçamento e capital necessário.'); return
+    }
+    if (Boolean(budgetValue) !== Boolean(capitalValue)) {
+      setError('Para ajustar o índice pelo orçamento, informe também o capital total necessário estimado para este ponto.'); return
+    }
     const version = ++analysisVersion.current
     setAnalyzing(true)
     startAnalysisProgress()
@@ -132,7 +144,8 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
         business_type: selectedBusiness,
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
-        budget: parseBudgetInput(budget),
+        budget: budgetValue,
+        estimated_required_capital: capitalValue,
         municipality_ibge_code: selectedLocation.municipality?.ibge_code,
         municipality_name: selectedLocation.municipality?.name,
         municipality_state: selectedLocation.municipality?.state || undefined,
@@ -153,7 +166,7 @@ export default function MapAnalysis({ selectedRegion, setSelectedRegion, selecte
       {analysisResult && <Button variant="secondary" size="compact" className="insights-toggle" aria-expanded={insightsOpen} aria-controls="analysis-insights" onClick={() => setInsightsOpen(value => !value)}><PanelRightOpen size={17} aria-hidden="true" />{insightsOpen ? 'Ocultar evidências' : 'Ver evidências'}</Button>}
     </div>
     <div className="atlas-workspace" data-has-result={Boolean(analysisResult)}>
-      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} analyzing={analyzing} analysisStep={analysisStep} resolvingLocation={resolvingMapLocation} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onAnalyze={() => void handleAnalyze()} onError={setError} />
+      <OpportunityQuery address={address} selectedLocation={selectedLocation} selectedBusiness={selectedBusiness} budget={budget} requiredCapital={requiredCapital} analyzing={analyzing} analysisStep={analysisStep} resolvingLocation={resolvingMapLocation} error={error} onAddressChange={changeAddress} onLocationSelect={chooseLocation} onBusinessChange={changeBusiness} onBudgetChange={changeBudget} onRequiredCapitalChange={changeRequiredCapital} onAnalyze={() => void handleAnalyze()} onError={setError} />
       <section className="atlas-map" aria-label="Mapa com dados observados">
         <div className="map-canvas"><MapComponent
           analysisResult={analysisResult}

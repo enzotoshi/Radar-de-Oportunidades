@@ -6,7 +6,7 @@ import InlineAlert from '../shared/InlineAlert'
 import MetricSignal from './MetricSignal'
 import ProvenanceDialog from './ProvenanceDialog'
 
-const componentKeys = new Set(['competitors', 'competition_density', 'infrastructure', 'mobility', 'financial_viability'])
+const componentKeys = new Set(['competitors', 'competition_density', 'infrastructure', 'mobility', 'budget_coverage'])
 
 export default function AnalysisInsights({ result, onClear, onGoToInvestor }: { result: AnalysisResult; onClear: () => void; onGoToInvestor: () => void }) {
   const entries = Object.entries(result.metrics)
@@ -16,7 +16,7 @@ export default function AnalysisInsights({ result, onClear, onGoToInvestor }: { 
   const secondary = signals.length ? context : entries.slice(Math.min(4, entries.length))
 
   return <aside className="analysis-insights result-panel" aria-label="Evidências da oportunidade">
-    <header className="insights-header"><div><span className="section-kicker">Leitura do território</span><div className="score-lockup"><strong>{result.opportunity_score.toFixed(1)}</strong><span>/100</span></div></div><IconButton label="Limpar resultado da análise" onClick={onClear}><X size={18} aria-hidden="true" /></IconButton></header>
+    <header className="insights-header"><div><span className="section-kicker">Índice da oportunidade</span><div className="score-lockup"><strong>{result.opportunity_score.toFixed(1)}</strong><span>/100</span></div></div><IconButton label="Limpar resultado da análise" onClick={onClear}><X size={18} aria-hidden="true" /></IconButton></header>
     <p className="insights-classification">{result.classification}</p><p className="insights-score-label">{result.score_label}</p>
     <InlineAlert tone="info"><Lightbulb size={18} aria-hidden="true" /><strong>Próximo passo recomendado</strong><p>{result.recommendation}</p></InlineAlert>
     <section className="insight-group" aria-labelledby="signals-title"><h3 id="signals-title">Sinais que formam o índice</h3><div className="metric-signal-list">{primary.map(([key, metric]) => <MetricSignal key={key} metricKey={key} metric={metric} emphasis="primary" />)}</div></section>

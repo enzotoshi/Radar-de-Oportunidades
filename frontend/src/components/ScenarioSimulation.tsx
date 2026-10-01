@@ -28,7 +28,7 @@ export default function ScenarioSimulation({ analysisResult, businessType, onGoT
     const version = ++requestVersion.current
     setLoading(true); setError(null); setResult(null)
     try {
-      const response = await simulateScenario({ address: analysisResult.location.address, business_type: businessType, lat: analysisResult.location.lat, lng: analysisResult.location.lng, budget: analysisResult.budget ?? undefined, population_growth: populationGrowth, income_growth: incomeGrowth, new_competitors: newCompetitors })
+      const response = await simulateScenario({ address: analysisResult.location.address, business_type: businessType, lat: analysisResult.location.lat, lng: analysisResult.location.lng, budget: analysisResult.budget ?? undefined, estimated_required_capital: analysisResult.estimated_required_capital ?? undefined, population_growth: populationGrowth, income_growth: incomeGrowth, new_competitors: newCompetitors })
       if (version === requestVersion.current) setResult(response)
     } catch (reason) {
       if (version === requestVersion.current) setError(getApiError(reason, 'Não foi possível calcular a projeção porque os dados-base estão indisponíveis.'))

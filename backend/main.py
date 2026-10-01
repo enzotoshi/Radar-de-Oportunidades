@@ -115,14 +115,6 @@ BUSINESS_CATALOG = [
 SUPPORTED_BUSINESSES = {item["id"] for item in BUSINESS_CATALOG}
 BUSINESS_ICONS = {item["id"]: item["icon"] for item in BUSINESS_CATALOG}
 BUSINESS_ALIASES = {"restaurante_fitness": "restaurante_saudavel"}
-INVESTMENT_REFERENCE_BY_SECTOR = {
-    "Alimentação e bebidas": 100_000,
-    "Saúde e bem-estar": 150_000,
-    "Varejo": 100_000,
-    "Serviços": 70_000,
-    "Educação": 100_000,
-    "Negócios e outros": 150_000,
-}
 
 
 def _ensure_supported_business(business_type: str) -> str:
@@ -151,26 +143,20 @@ def _recommendation(score: float) -> str:
     return "Os sinais mapeados exigem cautela; o índice não substitui estudo de viabilidade."
 
 
-def _financial_viability(budget: Optional[float], business_type: str) -> Optional[Dict[str, float]]:
-    """Converte o orçamento em capacidade de executar a oportunidade.
-
-    A referência é um parâmetro explícito por setor, não uma cotação de mercado.
-    A curva contínua limita a influência do orçamento e não estima retorno.
-    """
-    if budget is None:
+def _budget_coverage(budget: Optional[float], required_capital: Optional[float]) -> Optional[Dict[str, float]]:
+    """Compara duas quantias informadas pelo usuário para o ponto escolhido."""
+    if budget is None or required_capital is None:
         return None
-
-    business = next(item for item in BUSINESS_CATALOG if item["id"] == business_type)
-    reference = INVESTMENT_REFERENCE_BY_SECTOR[business["sector"]]
-    ratio = budget / reference
-    # Curva contínua evita um platô em que mudanças no orçamento não alteram a análise.
-    factor = budget / (budget + reference)
     return {
         "budget": budget,
-        "reference": reference,
-        "ratio": ratio,
-        "factor": factor,
+        "required_capital": required_capital,
+        "coverage": budget / required_capital,
+        "factor": min(1.0, budget / required_capital),
     }
+
+
+def _brl(value: float) -> str:
+    return f"R$ {value:,.0f}".replace(",", ".")
 
 
 def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
@@ -202,7 +188,7 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
             gdp_value *= 1000
     score_parts = analysis["score"]
     market_score = score_parts["overall"]
-    financial = _financial_viability(request.budget, business_type)
+    financial = _budget_coverage(request.budget, request.estimated_required_capital)
     score = round(market_score * financial["factor"], 1) if financial else market_score
     radius_km = analysis["radius_meters"] / 1000
     warnings = [
@@ -215,8 +201,8 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         warnings.append("PIB municipal indisponível nesta consulta.")
     if financial:
         warnings.append(
-            "A viabilidade financeira usa uma referência configurada por setor; "
-            "valide custos, aluguel, estoque e capital de giro antes de investir."
+            "A cobertura do orçamento usa um custo total estimado por você para este ponto. "
+            "Confirme aluguel, implantação, estoque e capital de giro antes de investir."
         )
 
     municipality = (
@@ -286,16 +272,16 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         },
     }
     if financial:
-        metrics["financial_viability"] = {
-            "value": round(financial["factor"] * 100, 1),
-            "label": "Viabilidade do orçamento",
+        metrics["budget_coverage"] = {
+            "value": round(financial["coverage"] * 100, 1),
+            "label": "Cobertura do capital estimado",
             "description": (
-                f"Orçamento de R$ {financial['budget']:,.0f} equivale a "
-                f"{financial['ratio']:.2f}× da referência setorial de R$ {financial['reference']:,.0f}."
+                f"{_brl(financial['budget'])} disponíveis para "
+                f"{_brl(financial['required_capital'])} de capital necessário estimado por você neste ponto."
             ),
             "kind": "calculated",
-            "source": "Parâmetro de referência configurado pelo Radar",
-            "reference": "Implantação + 50% de reserva operacional",
+            "source": "Valores informados por você",
+            "reference": "Estimativa para o endereço selecionado",
             "unit": "%",
         }
 
@@ -308,8 +294,9 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
     )
     if financial:
         explanation += (
-            f" O índice territorial de {market_score:.1f}/100 foi limitado pela viabilidade "
-            f"financeira para {score:.1f}/100."
+            f" O índice territorial de {market_score:.1f}/100 foi ajustado pela cobertura "
+            f"do capital estimado para {score:.1f}/100. Capital acima da estimativa "
+            "não aumenta o índice territorial."
         )
     markers = [
         {
@@ -326,6 +313,7 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
     return {
         "opportunity_score": score,
         "budget": request.budget,
+        "estimated_required_capital": request.estimated_required_capital,
         "score_label": "Índice de oportunidade — metodologia própria",
         "metrics": metrics,
         "explanation": explanation,
@@ -344,16 +332,16 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
         "collected_at": analysis["collected_at"],
         "methodology": {
             "formula": (
-                "índice territorial × fator de viabilidade financeira"
+                "índice territorial × mín(1, orçamento / capital necessário estimado pelo usuário)"
                 if financial else "0,45 × concorrência + 0,30 × infraestrutura + 0,25 × mobilidade"
             ),
             "competition": "máx(0, 100 − densidade_de_estabelecimentos × 9)",
             "infrastructure": "mín(100, equipamentos_mapeados × 5)",
             "mobility": "mín(100, pontos_de_mobilidade_mapeados × 7)",
-            "financial_viability": (
-                "orçamento / (orçamento + referência setorial); curva contínua de capacidade relativa, "
-                "sem representar custo observado ou retorno financeiro"
-                if financial else "Não calculada: orçamento não informado"
+            "budget_coverage": (
+                "mín(1, orçamento / capital necessário estimado pelo usuário); "
+                "o custo local não é coletado automaticamente"
+                if financial else "Não calculada: orçamento e capital necessário não informados"
             ),
             "components": score_parts,
         },
@@ -478,7 +466,7 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         raise HTTPException(status_code=503, detail=f"Dados-base indisponíveis: {exc}") from exc
 
     base_score = observed["score"]["overall"]
-    financial = _financial_viability(request.budget, business_type)
+    financial = _budget_coverage(request.budget, request.estimated_required_capital)
     if financial:
         base_score = round(base_score * financial["factor"], 1)
     base_competition = observed["score"]["competition"]
@@ -496,7 +484,8 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             request.population_growth * factor * 0.10
             + request.income_growth * factor * 0.10
         )
-        projected = max(0.0, min(100.0, base_score + competition_delta + assumption_adjustment))
+        projected_market = observed["score"]["overall"] + competition_delta + assumption_adjustment
+        projected = max(0.0, min(100.0, projected_market * financial["factor"] if financial else projected_market))
         year = current_year + offset
         projections.append(
             YearProjection(year=year, score=round(projected, 1), label=str(year))
@@ -525,10 +514,10 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             "classification": "hipóteses do usuário",
         },
         methodology=(
-            "score projetado = score observado + 45% da variação do componente de "
+            "score territorial projetado = score territorial observado + 45% da variação do componente de "
             "concorrência + 0,10 ponto por ponto percentual das hipóteses de população "
             "e renda, aplicado progressivamente em cinco anos; limitado a 0–100. "
-            "O score inicial inclui o fator do orçamento quando informado."
+            "A cobertura do capital estimado é aplicada a cada ano quando informada."
         ),
         source_analysis_at=observed["collected_at"],
     )
@@ -539,7 +528,7 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             "opportunity_score": round(base_score, 1),
             "score_label": "Índice calculado sobre sinais territoriais e orçamento informado",
             "metrics": {"competitors": {"value": observed["osm"]["competitor_count"], "kind": "real", "source": "OpenStreetMap/Overpass"}, "population": {"value": (observed.get("population_area") or {}).get("value"), "kind": "estimated", "source": "WorldPop via Esri"}},
-            "methodology": {"simulation": simulation_result.model_dump(), "budget": request.budget},
+            "methodology": {"simulation": simulation_result.model_dump(), "budget": request.budget, "estimated_required_capital": request.estimated_required_capital},
             "warnings": ["Cenários são hipóteses, não previsões ou recomendação financeira."],
             "collected_at": observed["collected_at"],
         })

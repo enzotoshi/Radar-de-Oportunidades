@@ -64,6 +64,7 @@ export interface ScoreMethodology {
 export interface AnalysisResult {
   opportunity_score: number
   budget?: number | null
+  estimated_required_capital?: number | null
   score_label: string
   metrics: Record<string, MetricDetail>
   explanation: string
@@ -91,6 +92,7 @@ export interface ScenarioParams {
   lat: number
   lng: number
   budget?: number
+  estimated_required_capital?: number
   population_growth: number
   income_growth: number
   new_competitors: number

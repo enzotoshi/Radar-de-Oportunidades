@@ -168,6 +168,7 @@ export async function analyzeOpportunity(input: {
   lat: number
   lng: number
   budget?: number
+  estimated_required_capital?: number
   municipality_ibge_code?: string
   municipality_name?: string
   municipality_state?: string
@@ -198,11 +199,13 @@ export async function generateInvestorReport(
   location: Location,
   businessType: string,
   budget?: number | null,
+  estimatedRequiredCapital?: number | null,
 ): Promise<InvestorReport> {
   const { data } = await api.post<InvestorReport>('/api/investor-report', {
     address: location.address,
     business_type: businessType,
     budget: budget ?? undefined,
+    estimated_required_capital: estimatedRequiredCapital ?? undefined,
     lat: location.lat,
     lng: location.lng,
     municipality_ibge_code: location.municipality?.ibge_code,

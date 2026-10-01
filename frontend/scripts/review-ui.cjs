@@ -13,6 +13,7 @@ const location = {
 }
 const analysis = {
   opportunity_score: 72.5, score_label: 'Indice da metodologia propria',
+  budget: 125000, estimated_required_capital: 150000,
   classification: 'Indice alto na metodologia propria', location,
   business_type: 'cafeteria', radius_meters: 1500,
   metrics: {
@@ -163,6 +164,8 @@ async function main() {
     assert.equal(await page.locator('#analysis-budget').getAttribute('placeholder'), 'Digite o valor...')
     await page.locator('#analysis-budget').fill('125000')
     assert.equal(await page.locator('#analysis-budget').inputValue(), '125.000')
+    await page.locator('#analysis-required-capital').fill('150000')
+    assert.equal(await page.locator('#analysis-required-capital').inputValue(), '150.000')
     await page.getByRole('button', { name: 'Analisar dados reais' }).click()
     await page.getByRole('button', { name: 'Analisando fontes...' }).waitFor()
     await page.getByRole('complementary', { name: 'Evidências da oportunidade' }).waitFor()
@@ -186,7 +189,7 @@ async function main() {
     await page.keyboard.press('Escape')
     await page.getByRole('dialog').waitFor({ state: 'hidden' })
     assert.equal(await detailTrigger.evaluate(element => element === document.activeElement), true)
-    assert.deepEqual(calls.find(call => call.path.endsWith('/analyze-with-ai')).body, { address: location.address, business_type: 'cafeteria', lat: location.lat, lng: location.lng, budget: 125000, municipality_ibge_code: '3550308', municipality_name: 'Sao Paulo', municipality_state: 'SP' })
+    assert.deepEqual(calls.find(call => call.path.endsWith('/analyze-with-ai')).body, { address: location.address, business_type: 'cafeteria', lat: location.lat, lng: location.lng, budget: 125000, estimated_required_capital: 150000, municipality_ibge_code: '3550308', municipality_name: 'Sao Paulo', municipality_state: 'SP' })
     await assertNoSeriousAxeViolations(page, 'resultado da análise')
     await page.screenshot({ path: path.join(destination, '02-explorar-resultado.png'), fullPage: true })
 
@@ -197,12 +200,12 @@ async function main() {
     await page.getByRole('slider').first().focus()
     await page.keyboard.press('ArrowRight')
     assert.equal(await page.getByRole('slider').first().inputValue(), '1')
-    await page.getByRole('button', { name: 'Gerar projeção do sistema' }).click()
-    await page.getByRole('button', { name: 'Calculando projeção...' }).waitFor()
+    await page.getByRole('button', { name: 'Simular e analisar cenário' }).click()
+    await page.getByRole('button', { name: 'Calculando e analisando cenário...' }).waitFor()
     await page.getByRole('region', { name: 'Trajetória projetada' }).waitFor()
     await page.getByText('Valores da projeção').click()
     assert.equal(await page.locator('.chart-values tbody tr').count(), 6)
-    assert.deepEqual(calls.find(call => call.path.endsWith('/simulate')).body, { address: location.address, business_type: 'cafeteria', lat: location.lat, lng: location.lng, population_growth: 1, income_growth: 0, new_competitors: 0 })
+    assert.deepEqual(calls.find(call => call.path.endsWith('/simulate')).body, { address: location.address, business_type: 'cafeteria', lat: location.lat, lng: location.lng, budget: 125000, estimated_required_capital: 150000, population_growth: 1, income_growth: 0, new_competitors: 0 })
     await assertNoSeriousAxeViolations(page, 'simulação')
     await page.screenshot({ path: path.join(destination, '03-simulacao.png'), fullPage: true })
 
