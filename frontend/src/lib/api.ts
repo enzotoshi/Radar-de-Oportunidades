@@ -173,12 +173,12 @@ export async function analyzeOpportunity(input: {
   municipality_name?: string
   municipality_state?: string
 }): Promise<AnalysisResult> {
-  const { data } = await api.post<AnalysisResult>('/api/analyze-with-ai', input)
+  const { data } = await api.post<AnalysisResult>('/api/analyze-with-ai', input, { timeout: 120_000 })
   return data
 }
 
 export async function simulateScenario(params: ScenarioParams): Promise<SimulationResult> {
-  const { data } = await api.post<SimulationResult>('/api/simulate', params)
+  const { data } = await api.post<SimulationResult>('/api/simulate', params, { timeout: 120_000 })
   return data
 }
 
@@ -211,7 +211,7 @@ export async function generateInvestorReport(
     municipality_ibge_code: location.municipality?.ibge_code,
     municipality_name: location.municipality?.name,
     municipality_state: location.municipality?.state || undefined,
-  })
+  }, { timeout: 150_000 })
   return data
 }
 

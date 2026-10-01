@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import math
+import os
 from copy import deepcopy
 import unittest
 from unittest.mock import Mock, patch
 
 import main
+import ai_report_service
 import public_data_service as data
 import speech_service
 from models import GameScoreRequest, LocationAnalysisRequest, SimulateRequest
@@ -80,6 +82,40 @@ class DataPolicyTests(unittest.TestCase):
         self.assertEqual(other_location["metrics"]["competitors"]["value"], 10)
         with self.assertRaises(ValueError):
             LocationAnalysisRequest(address="Ponto pesquisado", business_type="cafeteria", lat=-23.55, lng=-46.63, budget=100_000)
+
+    def test_groq_score_uses_observed_evidence_and_budget_coverage(self):
+        response = Mock()
+        response.status_code = 200
+        response.ok = True
+        response.json.return_value = {"choices": [{"message": {"content": '{"territorial_score": 80, "explanation": "Dois concorrentes e quatro equipamentos de infraestrutura foram mapeados."}'}}]}
+        request = LocationAnalysisRequest(
+            address="Ponto pesquisado", business_type="cafeteria", lat=-23.55,
+            lng=-46.63, budget=50_000, estimated_required_capital=100_000,
+        )
+        with (
+            patch.object(main, "analyze_public_data", return_value=observed_payload()),
+            patch.object(ai_report_service.requests, "post", return_value=response) as groq,
+            patch.dict(os.environ, {"GROQ_API_KEY": "test-only-key"}),
+        ):
+            result = main.analyze_location(request)
+        self.assertEqual(result["score_origin"], "ai")
+        self.assertEqual(result["opportunity_score"], 40.0)
+        self.assertEqual(result["calculated_score"], 21.2)
+        self.assertEqual(result["methodology"]["ai_scoring"]["territorial_score"], 80.0)
+        sent = groq.call_args.kwargs["json"]
+        self.assertEqual(sent["response_format"], {"type": "json_object"})
+        self.assertIn('"value": 2', sent["messages"][1]["content"])
+
+    def test_groq_unavailable_shows_calculated_score(self):
+        request = LocationAnalysisRequest(address="Ponto pesquisado", business_type="cafeteria", lat=-23.55, lng=-46.63)
+        with (
+            patch.object(main, "analyze_public_data", return_value=observed_payload()),
+            patch.dict(os.environ, {"GROQ_API_KEY": ""}),
+        ):
+            result = main.analyze_location(request)
+        self.assertEqual(result["score_origin"], "calculated")
+        self.assertEqual(result["opportunity_score"], 42.5)
+        self.assertIn("GROQ_API_KEY", result["ai_error"])
 
     def test_all_40_catalog_items_have_real_osm_filters_and_icons(self):
         self.assertEqual(len(main.BUSINESS_CATALOG), 40)

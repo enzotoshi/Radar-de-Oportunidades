@@ -32,7 +32,7 @@ from public_data_service import (
     search_locations,
 )
 from speech_service import test_speech_connection, transcribe_audio
-from ai_report_service import AIReportUnavailable, generate_investor_report
+from ai_report_service import AIReportUnavailable, generate_investor_report, generate_opportunity_score
 
 
 app = FastAPI(
@@ -312,6 +312,8 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
     ]
     return {
         "opportunity_score": score,
+        "calculated_score": score,
+        "score_origin": "calculated",
         "budget": request.budget,
         "estimated_required_capital": request.estimated_required_capital,
         "score_label": "Índice de oportunidade — metodologia própria",
@@ -435,9 +437,33 @@ def analyze_legacy() -> None:
 
 @app.post("/api/analyze-with-ai", response_model=AnalysisResponse)
 def analyze_location(request: LocationAnalysisRequest) -> Dict[str, Any]:
-    # O nome histórico da rota foi mantido por compatibilidade. Nenhuma IA é
-    # usada como fonte factual.
-    return _build_analysis(request)
+    analysis = _build_analysis(request)
+    try:
+        ai = generate_opportunity_score(analysis)
+    except AIReportUnavailable as exc:
+        analysis["ai_error"] = str(exc)
+        return analysis
+
+    coverage = _budget_coverage(request.budget, request.estimated_required_capital)
+    score = round(ai["territorial_score"] * coverage["factor"], 1) if coverage else ai["territorial_score"]
+    analysis["opportunity_score"] = score
+    analysis["score_origin"] = "ai"
+    analysis["score_model"] = ai["model"]
+    analysis["ai_score_explanation"] = ai["explanation"]
+    analysis["score_label"] = "Índice territorial avaliado pelo Groq" + (" e ajustado pelo orçamento" if coverage else "")
+    analysis["classification"] = _classification(score)
+    analysis["recommendation"] = _recommendation(score)
+    analysis["methodology"]["formula"] = (
+        "score territorial proposto pelo Groq × mín(1, orçamento / capital estimado pelo usuário)"
+        if coverage else "score territorial proposto pelo Groq a partir dos sinais observados"
+    )
+    analysis["methodology"]["ai_scoring"] = {"model": ai["model"], "territorial_score": ai["territorial_score"]}
+    analysis["explanation"] = (
+        f"O Groq atribuiu {ai['territorial_score']:.1f}/100 ao território: {ai['explanation']} "
+        + (f"A cobertura do capital informado ajustou o resultado para {score:.1f}/100." if coverage else "")
+    )
+    analysis["warnings"].append("Score por IA é uma interpretação dos sinais mapeados; não é probabilidade de sucesso ou retorno financeiro.")
+    return analysis
 
 
 @app.post("/api/voice", response_model=VoiceResponse)
@@ -585,7 +611,7 @@ def gamification_score(request: GameScoreRequest) -> GameScoreResponse:
 @app.post("/api/investor-report", response_model=InvestorReportResponse)
 def investor_report(request: LocationAnalysisRequest) -> InvestorReportResponse:
     """Gera uma leitura por IA, limitada aos dados e avisos do Radar."""
-    analysis = _build_analysis(request)
+    analysis = analyze_location(request)
     try:
         return InvestorReportResponse(**generate_investor_report(analysis))
     except AIReportUnavailable as exc:

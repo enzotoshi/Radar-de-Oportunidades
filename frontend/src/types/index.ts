@@ -63,6 +63,11 @@ export interface ScoreMethodology {
 
 export interface AnalysisResult {
   opportunity_score: number
+  calculated_score?: number | null
+  score_origin?: 'ai' | 'calculated'
+  score_model?: string | null
+  ai_score_explanation?: string | null
+  ai_error?: string | null
   budget?: number | null
   estimated_required_capital?: number | null
   score_label: string

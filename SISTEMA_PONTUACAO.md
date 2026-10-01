@@ -28,6 +28,12 @@ mobilidade = min(100, pontos_de_mobilidade * 7)
 
 Os multiplicadores e pesos são escolhas metodológicas do projeto, publicadas para permitir auditoria. Devem ser calibrados futuramente contra resultados observados antes de qualquer uso decisório.
 
+## Score territorial por IA
+
+Quando `GROQ_API_KEY` está configurada, a busca envia ao Groq somente o tipo de negócio, o ponto selecionado, a contagem e densidade de concorrentes, infraestrutura, mobilidade e o score calculado como referência. O modelo devolve uma nota territorial de 0 a 100 e uma explicação. A API valida o formato e a faixa da nota. A interface identifica o modelo usado.
+
+O orçamento não é convertido em custo pelo modelo. A cobertura do capital estimado pelo usuário é aplicada à nota territorial retornada pelo Groq. Se a IA estiver indisponível ou responder de forma inválida, a busca exibe o índice calculado pela fórmula acima e informa o motivo. As simulações continuam usando o índice calculado para manter projeções reproduzíveis; sua leitura textual por IA é identificada separadamente.
+
 ## Orçamento e capital necessário
 
 O usuário pode informar o orçamento disponível e sua estimativa do capital total necessário para o endereço escolhido, incluindo implantação, estoque e reserva de operação. O Radar não conhece esses custos automaticamente.

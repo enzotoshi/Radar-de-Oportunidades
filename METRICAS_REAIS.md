@@ -11,6 +11,7 @@
 | PIB municipal | REAL | SIDRA tabela 5938, variável 37 | último período retornado | reais a preços correntes |
 | População no raio | ESTIMADO | WorldPop 100 m via Esri | 2020 | soma de células; não censitária |
 | Índice de oportunidade | CALCULADO | metodologia do projeto | momento da coleta | escala 0–100 |
+| Score territorial por IA | INTERPRETAÇÃO | Groq sobre sinais coletados no ponto | momento da busca | escala 0–100; não é observação nem probabilidade de sucesso |
 | Cobertura do capital estimado | CALCULADO | orçamento e custo total estimado pelo usuário | endereço selecionado | percentual; não é custo observado |
 | Cenário futuro | SIMULADO | sistema + hipóteses do usuário | horizonte de cinco anos | projeção, não previsão |
 | Pontuação do modo investidor | CALCULADO | metodologia educacional | momento da coleta | escala 0–1000 |

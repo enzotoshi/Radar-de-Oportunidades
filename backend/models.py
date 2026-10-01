@@ -91,6 +91,11 @@ class BusinessMarker(BaseModel):
 
 class AnalysisResponse(BaseModel):
     opportunity_score: float = Field(..., ge=0, le=100)
+    calculated_score: Optional[float] = Field(default=None, ge=0, le=100)
+    score_origin: Literal["ai", "calculated"] = "calculated"
+    score_model: Optional[str] = None
+    ai_score_explanation: Optional[str] = None
+    ai_error: Optional[str] = None
     budget: Optional[float] = None
     estimated_required_capital: Optional[float] = None
     score_label: str

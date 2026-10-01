@@ -17,7 +17,8 @@ export default function AnalysisInsights({ result, onClear, onGoToInvestor }: { 
 
   return <aside className="analysis-insights result-panel" aria-label="Evidências da oportunidade">
     <header className="insights-header"><div><span className="section-kicker">Índice da oportunidade</span><div className="score-lockup"><strong>{result.opportunity_score.toFixed(1)}</strong><span>/100</span></div></div><IconButton label="Limpar resultado da análise" onClick={onClear}><X size={18} aria-hidden="true" /></IconButton></header>
-    <p className="insights-classification">{result.classification}</p><p className="insights-score-label">{result.score_label}</p>
+    <p className="insights-classification">{result.classification}</p><p className="insights-score-label">{result.score_label}{result.score_origin === 'ai' && result.score_model ? ` · ${result.score_model}` : ''}</p>
+    {result.ai_error && <InlineAlert tone="warning">{result.ai_error} Exibindo o índice calculado com os dados coletados.</InlineAlert>}
     <InlineAlert tone="info"><Lightbulb size={18} aria-hidden="true" /><strong>Próximo passo recomendado</strong><p>{result.recommendation}</p></InlineAlert>
     <section className="insight-group" aria-labelledby="signals-title"><h3 id="signals-title">Sinais que formam o índice</h3><div className="metric-signal-list">{primary.map(([key, metric]) => <MetricSignal key={key} metricKey={key} metric={metric} emphasis="primary" />)}</div></section>
     {secondary.length > 0 && <section className="insight-group" aria-labelledby="context-title"><h3 id="context-title">Contexto do território</h3><div className="metric-signal-list">{secondary.map(([key, metric]) => <MetricSignal key={key} metricKey={key} metric={metric} />)}</div></section>}
