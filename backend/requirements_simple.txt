@@ -1,0 +1,11 @@
+# Dependências simplificadas para Python 3.13
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+python-dotenv
+httpx
+requests
+truststore>=0.10.0; sys_platform == "win32"
+google-cloud-speech
+google-auth

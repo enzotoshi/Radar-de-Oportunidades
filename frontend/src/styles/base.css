@@ -1,0 +1,29 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { min-width: 320px; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + var(--space-4)); }
+body { margin: 0; min-height: 100svh; background: var(--color-canvas); color: var(--color-ink); font-family: 'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, sans-serif; font-size: var(--text-body); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { color: var(--color-ink); line-height: 1.15; text-wrap: balance; }
+h1 { font-size: var(--text-h1); font-weight: 650; }
+h2 { font-size: var(--text-h2); font-weight: 650; }
+h3 { font-size: var(--text-h3); font-weight: 620; }
+a { color: inherit; }
+::selection { background: var(--color-action-soft); color: var(--color-structure); }
+:focus-visible { outline: 3px solid var(--color-data) !important; outline-offset: 3px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.skip-link { position: fixed; z-index: 1000; top: var(--space-3); left: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-surface); color: var(--color-structure); border: 2px solid var(--color-data); border-radius: var(--radius-control); transform: translateY(-180%); }
+.skip-link:focus { transform: translateY(0); }
+button, [role='button'], input, select, summary { min-height: var(--control-height); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+@media (forced-colors: active) {
+  :focus-visible { outline: 3px solid Highlight !important; }
+  button, input, select, [role='button'] { border: 1px solid ButtonText !important; }
+}

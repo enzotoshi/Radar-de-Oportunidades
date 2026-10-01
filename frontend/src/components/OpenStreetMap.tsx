@@ -1,0 +1,303 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { Loader2, MapPin } from 'lucide-react'
+import { useReducedMotion } from '@/lib/useReducedMotion'
+import type { Map as LeafletMap, Marker } from 'leaflet'
+
+interface Props {
+  center?: [number, number]
+  zoom?: number
+  markers?: Array<{ position: [number, number]; title: string; subtitle?: string | null; kind?: 'analysis' | 'business'; icon?: string }>
+  onMapClick?: (lat: number, lng: number) => void
+  onUnavailableClick?: () => void
+  selectedLocation?: { lat: number; lng: number } | null
+  analysisRadius?: number // raio em metros da área de análise
+}
+
+interface BrazilBoundary {
+  type: 'FeatureCollection'
+  features: Array<{
+    type: 'Feature'
+    geometry: {
+      type: 'MultiPolygon'
+      coordinates: number[][][][]
+    }
+  }>
+}
+
+const SOUTH_AMERICA_BOUNDS: [[number, number], [number, number]] = [
+  [-56.0, -82.0],
+  [13.0, -34.0],
+]
+
+function isPointInRing(lat: number, lng: number, ring: number[][]) {
+  let inside = false
+  for (let current = 0, previous = ring.length - 1; current < ring.length; previous = current++) {
+    const [currentLng, currentLat] = ring[current]
+    const [previousLng, previousLat] = ring[previous]
+    const crossesLatitude = (currentLat > lat) !== (previousLat > lat)
+    const intersectionLng = ((previousLng - currentLng) * (lat - currentLat)) / (previousLat - currentLat) + currentLng
+    if (crossesLatitude && lng < intersectionLng) inside = !inside
+  }
+  return inside
+}
+
+function isInsideBrazil(boundary: BrazilBoundary, lat: number, lng: number) {
+  return boundary.features.some(feature => feature.geometry.coordinates.some(polygon => {
+    const [outerRing, ...holes] = polygon
+    return isPointInRing(lat, lng, outerRing) && !holes.some(hole => isPointInRing(lat, lng, hole))
+  }))
+}
+
+// One shared load also handles React Strict Mode mounting twice in development.
+let leafletLoad: Promise<typeof import('leaflet')> | null = null
+function loadLeaflet() {
+  if (!leafletLoad) {
+    leafletLoad = import('leaflet').catch((error) => {
+      leafletLoad = null
+      throw error
+    })
+  }
+  return leafletLoad
+}
+
+export default function OpenStreetMap({
+  center = [-23.5505, -46.6333],
+  zoom = 12,
+  markers = [],
+  onMapClick,
+  onUnavailableClick,
+  selectedLocation,
+  analysisRadius = 1500, // padrão 1500m conforme backend
+}: Props) {
+  const reducedMotion = useReducedMotion()
+  const mapRef = useRef<HTMLDivElement>(null)
+  const initialViewRef = useRef({ center, zoom })
+  const mapInstanceRef = useRef<LeafletMap | null>(null)
+  const markersRef = useRef<Marker[]>([])
+  const selectionCircleRef = useRef<any | null>(null)
+  const leafletRef = useRef<typeof import('leaflet') | null>(null)
+  const onMapClickRef = useRef(onMapClick)
+  const onUnavailableClickRef = useRef(onUnavailableClick)
+  const [ready, setReady] = useState(false)
+  const [error, setError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
+
+  useEffect(() => {
+    onUnavailableClickRef.current = onUnavailableClick
+  }, [onUnavailableClick])
+
+  useEffect(() => {
+    let disposed = false
+    let resizeObserver: ResizeObserver | undefined
+    setError(false)
+    setReady(false)
+    loadLeaflet()
+      .then(async (L) => {
+        if (disposed || !mapRef.current) return
+        const boundaryResponse = await fetch('/data/brazil-boundary.geojson')
+        if (!boundaryResponse.ok) throw new Error('Não foi possível carregar os limites do Brasil.')
+        const brazilBoundary = await boundaryResponse.json() as BrazilBoundary
+        if (disposed || !mapRef.current) return
+        leafletRef.current = L
+        const southAmericaBounds = L.latLngBounds(SOUTH_AMERICA_BOUNDS)
+        const map = L.map(mapRef.current, {
+          maxBounds: southAmericaBounds,
+          maxBoundsViscosity: 1,
+          worldCopyJump: false,
+          zoomSnap: 0.5, // permite zooms intermediários
+        })
+
+        map.setView(initialViewRef.current.center, initialViewRef.current.zoom)
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution:
+            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+          minZoom: 1,
+          noWrap: true,
+          tileSize: 256,
+          updateWhenZooming: false,
+        }).addTo(map)
+
+        // O primeiro enquadramento precisa acontecer depois que o container
+        // recebe suas dimensões finais; antes disso o Leaflet pode abrir no
+        // nível mundial e expor tiles fora da máscara.
+        map.whenReady(() => {
+          setTimeout(() => {
+            if (disposed) return
+            map.invalidateSize()
+            if (initialViewRef.current.zoom <= 4) {
+              map.setView(initialViewRef.current.center, initialViewRef.current.zoom, { animate: false })
+              map.setMinZoom(initialViewRef.current.zoom)
+            }
+            setReady(true)
+          }, 100)
+        })
+
+        map.on('click', (event: any) => {
+          const { lat, lng } = event.latlng
+          if (isInsideBrazil(brazilBoundary, lat, lng)) onMapClickRef.current?.(lat, lng)
+          else onUnavailableClickRef.current?.()
+        })
+
+        mapInstanceRef.current = map
+        resizeObserver = new ResizeObserver(() => map.invalidateSize())
+        resizeObserver.observe(mapRef.current)
+      })
+      .catch(() => {
+        if (!disposed) setError(true)
+      })
+    return () => {
+      disposed = true
+      resizeObserver?.disconnect()
+      mapInstanceRef.current?.remove()
+      mapInstanceRef.current = null
+      markersRef.current = []
+    }
+  }, [attempt])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const L = leafletRef.current
+    if (!ready || !map || !L) return
+    if (zoom <= 4) {
+      map.setView(center, zoom, { animate: !reducedMotion })
+      map.setMinZoom(zoom)
+    } else {
+      map.setView(center, zoom, { animate: !reducedMotion })
+    }
+  }, [ready, center, zoom, reducedMotion])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const L = leafletRef.current
+    if (!ready || !map || !L) return
+    markersRef.current.forEach((marker) => marker.remove())
+    markersRef.current = markers.map(
+      ({ position, title, subtitle, kind = 'analysis', icon }) => {
+        const dot = document.createElement('div')
+        dot.className = `map-marker map-marker--${kind}`
+        if (kind === 'business') {
+          dot.textContent = icon || ''
+          dot.setAttribute('aria-hidden', 'true')
+        }
+        const isBusiness = kind === 'business'
+        const markerIcon = L.divIcon({
+          className: 'custom-marker',
+          html: dot,
+          iconSize: isBusiness ? [32, 32] : [24, 24],
+          iconAnchor: isBusiness ? [16, 28] : [12, 12],
+        })
+        const popup = document.createElement('div')
+        popup.className = 'map-popup'
+        const popupTitle = document.createElement('strong')
+        popupTitle.textContent = title
+        popup.append(popupTitle)
+        if (subtitle) {
+          const popupSubtitle = document.createElement('span')
+          popupSubtitle.textContent = subtitle
+          popup.append(popupSubtitle)
+        }
+        return L.marker(position, { icon: markerIcon, title })
+          .addTo(map)
+          .bindPopup(popup, {
+            className: 'map-popup-shell',
+            closeButton: true,
+            autoClose: true,
+            closeOnClick: true,
+            offset: L.point(0, -8),
+          })
+      }
+    )
+  }, [ready, markers])
+
+  // Gerencia o círculo de análise quando uma localização é selecionada
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const L = leafletRef.current
+    if (!ready || !map || !L) return
+
+    // Remove círculo anterior
+    if (selectionCircleRef.current) {
+      selectionCircleRef.current.remove()
+      selectionCircleRef.current = null
+    }
+
+    // Adiciona novo círculo representando a área de análise real
+    if (selectedLocation) {
+      // Círculo principal: área de análise com o raio real
+      const analysisCircle = L.circle(
+        [selectedLocation.lat, selectedLocation.lng],
+        {
+          radius: analysisRadius, // raio real da análise em metros
+          color: '#35b9ac',
+          fillColor: '#35b9ac',
+          fillOpacity: 0.15,
+          weight: 2,
+          opacity: 0.7,
+        }
+      )
+
+      // Marcador central pequeno para indicar o ponto exato
+      const centerMarker = L.circleMarker(
+        [selectedLocation.lat, selectedLocation.lng],
+        {
+          radius: 6,
+          color: '#ffffff',
+          fillColor: '#35b9ac',
+          fillOpacity: 1,
+          weight: 2,
+        }
+      )
+
+      // Agrupa ambos para remover juntos
+      const layerGroup = L.layerGroup([analysisCircle, centerMarker]).addTo(map)
+      selectionCircleRef.current = layerGroup
+    }
+  }, [ready, selectedLocation, analysisRadius])
+
+  return (
+    <div className="relative w-full h-full">
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        aria-label="Mapa interativo da região"
+      />
+      {!ready && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-card text-slate-300 p-6 text-center"
+          role="status"
+        >
+          {error ? (
+            <>
+              <MapPin size={26} className="text-accent" />
+              <p className="text-sm">Não foi possível carregar o mapa.</p>
+              <p className="text-xs text-slate-400">
+                Verifique sua conexão e tente novamente.
+              </p>
+              <button
+                className="secondary-button"
+                onClick={() => setAttempt((value) => value + 1)}
+              >
+                Tentar novamente
+              </button>
+            </>
+          ) : (
+            <>
+              <Loader2 size={24} className="animate-spin text-accent" />
+              <p className="text-sm">
+                Carregando mapa...
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
