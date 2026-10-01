@@ -1,5 +1,8 @@
 services:
+<<<<<<< HEAD
   # Backend API
+=======
+>>>>>>> 5e6e868994a07422188a2fb2023ce1920f1f0cf2
   - type: web
     name: radar-oportunidades-api
     runtime: python
@@ -13,6 +16,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: FRONTEND_URL
+<<<<<<< HEAD
         value: https://radar-oportunidades.onrender.com
   
   # Frontend Next.js
@@ -30,3 +34,6 @@ services:
         value: 18.17.0
       - key: NEXT_PUBLIC_API_URL
         value: https://radar-oportunidades-api.onrender.com
+=======
+        sync: false
+>>>>>>> 5e6e868994a07422188a2fb2023ce1920f1f0cf2
