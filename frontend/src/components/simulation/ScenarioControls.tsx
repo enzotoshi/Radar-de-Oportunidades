@@ -29,6 +29,6 @@ export default function ScenarioControls(props: Props) {
       <Slider label="Novos concorrentes hipotéticos" value={props.newCompetitors} min={0} max={20} format={value => `${value} novos`} onChange={props.onNewCompetitors} />
     </div>
     {props.error && <InlineAlert tone="error" role="alert">{props.error}</InlineAlert>}
-    <Button type="button" busy={props.loading} onClick={props.onSimulate}><Sparkles size={17} aria-hidden="true" />{props.loading ? 'Calculando projeção...' : 'Gerar projeção do sistema'}</Button>
+    <Button type="button" busy={props.loading} onClick={props.onSimulate}><Sparkles size={17} aria-hidden="true" />{props.loading ? 'Calculando e analisando cenário...' : 'Simular e analisar cenário'}</Button>
   </section>
 }

@@ -84,6 +84,7 @@ class BusinessMarker(BaseModel):
 
 class AnalysisResponse(BaseModel):
     opportunity_score: float = Field(..., ge=0, le=100)
+    budget: Optional[float] = None
     score_label: str
     metrics: Dict[str, MetricDetail]
     explanation: str
@@ -115,6 +116,9 @@ class SimulateResponse(BaseModel):
     assumptions: Dict[str, Union[float, int, str]]
     methodology: str
     source_analysis_at: str
+    ai_analysis: Optional[str] = None
+    ai_model: Optional[str] = None
+    ai_error: Optional[str] = None
 
 class GameScoreResponse(BaseModel):
     total_score: int = Field(..., ge=0, le=1000)

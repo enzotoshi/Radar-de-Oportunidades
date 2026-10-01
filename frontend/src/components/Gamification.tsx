@@ -38,7 +38,7 @@ export default function Gamification({ analysisResult, businessType, onGoToMap }
         setGameResult(response)
         setPhase('result')
         setReportLoading(true)
-        void generateInvestorReport(analysisResult.location, businessType)
+        void generateInvestorReport(analysisResult.location, businessType, analysisResult.budget)
           .then(value => { if (version === requestVersion.current) setReport(value) })
           .catch(reason => { if (version === requestVersion.current) setReportError(getApiError(reason, 'O relatório por IA está indisponível agora.')) })
           .finally(() => { if (version === requestVersion.current) setReportLoading(false) })

@@ -63,6 +63,7 @@ export interface ScoreMethodology {
 
 export interface AnalysisResult {
   opportunity_score: number
+  budget?: number | null
   score_label: string
   metrics: Record<string, MetricDetail>
   explanation: string
@@ -105,6 +106,9 @@ export interface SimulationResult {
   assumptions: Record<string, string | number>
   methodology: string
   source_analysis_at: string
+  ai_analysis?: string | null
+  ai_model?: string | null
+  ai_error?: string | null
 }
 
 export interface GameResult {

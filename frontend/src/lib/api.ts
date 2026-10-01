@@ -197,10 +197,12 @@ export async function calculateGameScore(
 export async function generateInvestorReport(
   location: Location,
   businessType: string,
+  budget?: number | null,
 ): Promise<InvestorReport> {
   const { data } = await api.post<InvestorReport>('/api/investor-report', {
     address: location.address,
     business_type: businessType,
+    budget: budget ?? undefined,
     lat: location.lat,
     lng: location.lng,
     municipality_ibge_code: location.municipality?.ibge_code,

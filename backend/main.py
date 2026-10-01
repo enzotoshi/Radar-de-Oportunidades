@@ -155,8 +155,7 @@ def _financial_viability(budget: Optional[float], business_type: str) -> Optiona
     """Converte o orçamento em capacidade de executar a oportunidade.
 
     A referência é um parâmetro explícito por setor, não uma cotação de mercado.
-    Ela cobre implantação e uma reserva operacional de 50% antes de liberar todo
-    o potencial territorial.
+    A curva contínua limita a influência do orçamento e não estima retorno.
     """
     if budget is None:
         return None
@@ -164,14 +163,8 @@ def _financial_viability(budget: Optional[float], business_type: str) -> Optiona
     business = next(item for item in BUSINESS_CATALOG if item["id"] == business_type)
     reference = INVESTMENT_REFERENCE_BY_SECTOR[business["sector"]]
     ratio = budget / reference
-    if ratio < 0.5:
-        factor = 0.05 + ratio * 0.10
-    elif ratio < 1:
-        factor = 0.10 + (ratio - 0.5) * 1.20
-    elif ratio < 1.5:
-        factor = 0.70 + (ratio - 1) * 0.60
-    else:
-        factor = 1.0
+    # Curva contínua evita um platô em que mudanças no orçamento não alteram a análise.
+    factor = budget / (budget + reference)
     return {
         "budget": budget,
         "reference": reference,
@@ -332,6 +325,7 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
     ]
     return {
         "opportunity_score": score,
+        "budget": request.budget,
         "score_label": "Índice de oportunidade — metodologia própria",
         "metrics": metrics,
         "explanation": explanation,
@@ -357,8 +351,8 @@ def _build_analysis(request: LocationAnalysisRequest) -> Dict[str, Any]:
             "infrastructure": "mín(100, equipamentos_mapeados × 5)",
             "mobility": "mín(100, pontos_de_mobilidade_mapeados × 7)",
             "financial_viability": (
-                "0–50% da referência: operação inviável; 100–150%: reserva operacional; "
-                "acima de 150%: potencial territorial integral"
+                "orçamento / (orçamento + referência setorial); curva contínua de capacidade relativa, "
+                "sem representar custo observado ou retorno financeiro"
                 if financial else "Não calculada: orçamento não informado"
             ),
             "components": score_parts,
@@ -484,6 +478,9 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         raise HTTPException(status_code=503, detail=f"Dados-base indisponíveis: {exc}") from exc
 
     base_score = observed["score"]["overall"]
+    financial = _financial_viability(request.budget, business_type)
+    if financial:
+        base_score = round(base_score * financial["factor"], 1)
     base_competition = observed["score"]["competition"]
     density = observed["osm"]["competitor_density"]
     area_km2 = math.pi * (observed["radius_meters"] / 1000) ** 2
@@ -507,7 +504,7 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
 
     projected_score = projections[-1].score
     delta = round(projected_score - base_score, 1)
-    return SimulateResponse(
+    simulation_result = SimulateResponse(
         original_score=base_score,
         projected_score=projected_score,
         delta=delta,
@@ -530,10 +527,27 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         methodology=(
             "score projetado = score observado + 45% da variação do componente de "
             "concorrência + 0,10 ponto por ponto percentual das hipóteses de população "
-            "e renda, aplicado progressivamente em cinco anos; limitado a 0–100."
+            "e renda, aplicado progressivamente em cinco anos; limitado a 0–100. "
+            "O score inicial inclui o fator do orçamento quando informado."
         ),
         source_analysis_at=observed["collected_at"],
     )
+    try:
+        ai = generate_investor_report({
+            "business_type": business_type,
+            "location": {"address": request.address, "lat": request.lat, "lng": request.lng},
+            "opportunity_score": round(base_score, 1),
+            "score_label": "Índice calculado sobre sinais territoriais e orçamento informado",
+            "metrics": {"competitors": {"value": observed["osm"]["competitor_count"], "kind": "real", "source": "OpenStreetMap/Overpass"}, "population": {"value": (observed.get("population_area") or {}).get("value"), "kind": "estimated", "source": "WorldPop via Esri"}},
+            "methodology": {"simulation": simulation_result.model_dump(), "budget": request.budget},
+            "warnings": ["Cenários são hipóteses, não previsões ou recomendação financeira."],
+            "collected_at": observed["collected_at"],
+        })
+        simulation_result.ai_analysis = ai["report"]
+        simulation_result.ai_model = ai["model"]
+    except AIReportUnavailable as exc:
+        simulation_result.ai_error = str(exc)
+    return simulation_result
 
 
 @app.post("/api/gamification/score", response_model=GameScoreResponse)
